@@ -1,8 +1,22 @@
-use reqwest::blocking::Client;
+use reqwest::blocking::ClientBuilder;
+
+
+const USER_AGENT: &'static str = concat!(
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+);
 
 
 fn main() {
-    let client = Client::new();
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert("Accept", "application/vnd.github.v3+json".parse().unwrap());
+
+    let client = ClientBuilder::new()
+        .user_agent(USER_AGENT)
+        .default_headers(headers)
+        .build()
+        .unwrap();
 
     let response = client.request(
         reqwest::Method::GET,
@@ -11,8 +25,6 @@ fn main() {
             "teddywing",
         ),
     )
-        .header("Accept", "application/vnd.github.v3+json")
-        .header("User-Agent", "reflectub")
         .send()
         .unwrap();
 
