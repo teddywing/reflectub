@@ -77,23 +77,21 @@ impl Db {
 
     pub async fn repo_insert(
         &mut self,
-        repos: &[GithubRepo],
+        repo: Repo,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut tx = self.connection.begin().await?;
 
-        for repo in repos {
-            sqlx::query(r#"
-                INSERT INTO repositories
-                    (id, name, updated_at)
-                    VALUES
-                    (?, ?, ?)
-            "#)
-                .bind(repo.id)
-                .bind(&repo.name)
-                .bind(&repo.updated_at)
-                .execute(&mut tx)
-                .await?;
-        }
+        sqlx::query(r#"
+            INSERT INTO repositories
+                (id, name, updated_at)
+                VALUES
+                (?, ?, ?)
+        "#)
+            .bind(repo.id)
+            .bind(&repo.name)
+            .bind(&repo.updated_at)
+            .execute(&mut tx)
+            .await?;
 
         tx.commit().await?;
 
@@ -105,7 +103,7 @@ impl Db {
         Ok(false)
     }
 
-    pub fn repo_update(repo: &GithubRepo) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn repo_update(repo: &Repo) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 }
