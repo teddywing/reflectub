@@ -1,4 +1,5 @@
 use reqwest::blocking::ClientBuilder;
+use serde::Deserialize;
 
 
 const USER_AGENT: &'static str = concat!(
@@ -6,6 +7,18 @@ const USER_AGENT: &'static str = concat!(
     "/",
     env!("CARGO_PKG_VERSION"),
 );
+
+
+#[derive(Debug, Deserialize)]
+struct Repo {
+    id: usize,
+    name: String,
+    description: Option<String>,
+    fork: bool,
+    git_url: String,
+    default_branch: String,
+    updated_at: String,  // TODO: Maybe parse to date?
+}
 
 
 fn main() {
@@ -26,6 +39,8 @@ fn main() {
         ),
     )
         .send()
+        .unwrap()
+        .json::<Vec<Repo>>()
         .unwrap();
 
     dbg!(&response);
