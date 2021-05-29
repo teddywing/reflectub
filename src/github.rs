@@ -1,6 +1,5 @@
 use reqwest::blocking::ClientBuilder;
-
-use crate::repo::Repo;
+use serde::Deserialize;
 
 
 const USER_AGENT: &'static str = concat!(
@@ -8,6 +7,18 @@ const USER_AGENT: &'static str = concat!(
     "/",
     env!("CARGO_PKG_VERSION"),
 );
+
+
+#[derive(Debug, Deserialize)]
+pub struct Repo {
+    id: usize,
+    name: String,
+    description: Option<String>,
+    fork: bool,
+    git_url: String,
+    default_branch: String,
+    updated_at: String,  // TODO: Maybe parse to date?
+}
 
 
 pub fn fetch_repos() -> Result<Vec<Repo>, Box<dyn std::error::Error>> {
