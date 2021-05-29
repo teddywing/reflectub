@@ -1,8 +1,10 @@
-use reflectub::github;
+use reflectub::{git, github};
 
 
 fn main() {
-    let repos = github::fetch_repos().unwrap();
+    // let repos = github::fetch_repos().unwrap();
+    //
+    // dbg!(&repos);
 
-    dbg!(&repos);
+    git::mirror().unwrap();
 }
