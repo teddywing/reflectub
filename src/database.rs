@@ -1,8 +1,17 @@
-use sqlx::{self, ConnectOptions, Connection, Executor};
+use sqlx::{self, ConnectOptions, Connection, Executor, Row};
 
-use crate::github::Repo;
+use crate::github::Repo as GithubRepo;
 
 
+#[derive(Debug)]
+pub struct Repo {
+    id: Option<i64>,
+    name: Option<String>,
+    updated_at: Option<String>,
+}
+
+
+#[derive(Debug)]
 pub struct Db {
     connection: sqlx::SqliteConnection,
 }
@@ -43,15 +52,63 @@ impl Db {
         Ok(())
     }
 
-    pub fn repo_insert(repo: &Repo) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn repo_get(
+        &mut self,
+        id: i64,
+    ) -> Result<Repo, Box<dyn std::error::Error>> {
+        let mut tx = self.connection.begin().await?;
+
+        let row = sqlx::query("SELECT id, name FROM repositories where id = ?")
+            .bind(id)
+            .fetch_one(&mut tx)
+            .await?;
+
+        tx.commit().await?;
+
+        if row.is_empty() {
+            return Err("not found".into());
+        }
+
+        Ok(
+            Repo {
+                id: Some(row.get(0)),
+                name: Some(row.get(1)),
+                updated_at: None,
+            }
+        )
+    }
+
+    pub async fn repo_insert(
+        &mut self,
+        repos: &[GithubRepo],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut tx = self.connection.begin().await?;
+
+        for repo in repos {
+            sqlx::query(r#"
+                INSERT INTO repositories
+                    (id, name, updated_at)
+                    VALUES
+                    (?, ?, ?)
+            "#)
+                .bind(repo.id)
+                .bind(&repo.name)
+                .bind(&repo.updated_at)
+                .execute(&mut tx)
+                .await?;
+        }
+
+        tx.commit().await?;
+
         Ok(())
     }
 
     pub fn repo_is_updated() -> Result<bool, Box<dyn std::error::Error>> {
+        // select id from repositories where updated_at > datetime("2020-07-13T17:57:56Z");
         Ok(false)
     }
 
-    pub fn repo_update(repo: &Repo) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn repo_update(repo: &GithubRepo) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 }

@@ -11,13 +11,13 @@ const USER_AGENT: &'static str = concat!(
 
 #[derive(Debug, Deserialize)]
 pub struct Repo {
-    id: usize,
-    name: String,
-    description: Option<String>,
-    fork: bool,
-    git_url: String,
-    default_branch: String,
-    updated_at: String,  // TODO: Maybe parse to date?
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub fork: bool,
+    pub git_url: String,
+    pub default_branch: String,
+    pub updated_at: String,  // TODO: Maybe parse to date?
 }
 
 
