@@ -1,4 +1,4 @@
-use sqlx::{self, Connection};
+use sqlx::{self, ConnectOptions, Connection, Executor};
 
 use crate::github::Repo;
 
@@ -13,13 +13,33 @@ impl Db {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(
             Db {
-                connection: sqlx::SqliteConnection::connect(path)
+                connection: sqlx::sqlite::SqliteConnectOptions::new()
+                    .filename(path)
+                    .create_if_missing(true)
+                    .connect()
                     .await?,
             }
         )
     }
 
-    pub fn create() -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn create(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut tx = self.connection.begin().await?;
+
+        tx.execute(r#"
+            CREATE TABLE repositories (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        "#).await?;
+
+        tx.execute(r#"
+            CREATE UNIQUE INDEX idx_repositories_id
+                ON repositories (id);
+        "#).await?;
+
+        tx.commit().await?;
+
         Ok(())
     }
 

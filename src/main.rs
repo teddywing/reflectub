@@ -20,5 +20,7 @@ async fn main() {
     //     Path::new("/tmp/grsvp"),
     // ).unwrap();
 
-    let db = database::Db::connect("sqlite::memory:").await.unwrap();
+    let mut db = database::Db::connect("test.db").await.unwrap();
+
+    db.create().await.unwrap();
 }
