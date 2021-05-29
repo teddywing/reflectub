@@ -5,7 +5,7 @@ use crate::github::Repo as GithubRepo;
 
 #[derive(Debug)]
 pub struct Repo {
-    id: Option<i64>,
+    id: i64,
     name: Option<String>,
     updated_at: Option<String>,
 }
@@ -68,7 +68,7 @@ impl Db {
 
         Ok(
             Repo {
-                id: Some(row.get(0)),
+                id: row.get(0),
                 name: Some(row.get(1)),
                 updated_at: None,
             }
