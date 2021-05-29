@@ -1,6 +1,6 @@
 use sqlx::{self, ConnectOptions, Connection, Executor, Row};
 
-use crate::github::Repo as GithubRepo;
+use crate::github;
 
 
 #[derive(Debug)]
@@ -8,6 +8,16 @@ pub struct Repo {
     id: i64,
     name: Option<String>,
     updated_at: Option<String>,
+}
+
+impl From<github::Repo> for Repo {
+    fn from(repo: github::Repo) -> Self {
+        Self {
+            id: repo.id,
+            name: Some(repo.name),
+            updated_at: Some(repo.updated_at),
+        }
+    }
 }
 
 
