@@ -23,13 +23,12 @@ pub struct Repo {
 
 pub fn fetch_repos() -> Result<Vec<Repo>, Box<dyn std::error::Error>> {
     let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert("Accept", "application/vnd.github.v3+json".parse().unwrap());
+    headers.insert("Accept", "application/vnd.github.v3+json".parse()?);
 
     let client = ClientBuilder::new()
         .user_agent(USER_AGENT)
         .default_headers(headers)
-        .build()
-        .unwrap();
+        .build()?;
 
     let repos = client.request(
         reqwest::Method::GET,
@@ -38,10 +37,8 @@ pub fn fetch_repos() -> Result<Vec<Repo>, Box<dyn std::error::Error>> {
             "teddywing",
         ),
     )
-        .send()
-        .unwrap()
-        .json::<Vec<Repo>>()
-        .unwrap();
+        .send()?
+        .json::<Vec<Repo>>()?;
 
     Ok(repos)
 }
