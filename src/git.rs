@@ -1,21 +1,17 @@
 use std::path::Path;
 
 
-pub fn mirror() -> Result<(), Box<dyn std::error::Error>> {
-    // let builder = git2::build::RepoBuilder::new()
-    //     .bare(true)
-    //     .clone(
-    //         "https://github.com/teddywing/google-calendar-rsvp.git",
-    //         Path::new("/tmp/grsvp"),
-    //     );
-
-    let repo = git2::Repository::init_bare(Path::new("/tmp/grsvp"))?;
+pub fn mirror<P: AsRef<Path>>(
+    url: &str,
+    path: P,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let repo = git2::Repository::init_bare(path)?;
 
     let remote_name = "origin";
 
     let mut remote = repo.remote_with_fetch(
         remote_name,
-        "https://github.com/teddywing/google-calendar-rsvp.git",
+        url,
         "+refs/*:refs/*",
     )?;
 
