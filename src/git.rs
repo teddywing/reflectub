@@ -1,6 +1,13 @@
 use std::path::Path;
 
 
+/// Mirror a repository.
+///
+/// Works like:
+///
+/// ```shell
+/// git clone --mirror URL
+/// ```
 pub fn mirror<P: AsRef<Path>>(
     url: &str,
     path: P,
@@ -27,6 +34,13 @@ pub fn mirror<P: AsRef<Path>>(
     Ok(())
 }
 
+/// Update remotes.
+///
+/// Works like:
+///
+/// ```shell
+/// git remote update
+/// ```
 pub fn update<P: AsRef<Path>>(
     path: P,
 ) -> Result<(), Box<dyn std::error::Error>> {
