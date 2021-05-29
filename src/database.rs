@@ -58,16 +58,13 @@ impl Db {
     ) -> Result<Repo, Box<dyn std::error::Error>> {
         let mut tx = self.connection.begin().await?;
 
+        // NOTE: Returns `RowNotFound` if not found.
         let row = sqlx::query("SELECT id, name FROM repositories where id = ?")
             .bind(id)
             .fetch_one(&mut tx)
             .await?;
 
         tx.commit().await?;
-
-        if row.is_empty() {
-            return Err("not found".into());
-        }
 
         Ok(
             Repo {

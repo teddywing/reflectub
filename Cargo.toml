@@ -11,4 +11,4 @@ tokio = { version = "1.6.1", features = ["macros", "rt"] }
 
 [dependencies.sqlx]
 version = "0.5.5"
-features = ["chrono", "macros", "runtime-tokio-rustls", "sqlite"]
+features = ["chrono", "runtime-tokio-rustls", "sqlite"]
