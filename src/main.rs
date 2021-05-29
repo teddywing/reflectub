@@ -8,8 +8,12 @@ fn main() {
     //
     // dbg!(&repos);
 
-    git::mirror(
-        "https://github.com/teddywing/google-calendar-rsvp.git",
+    // git::mirror(
+    //     "https://github.com/teddywing/google-calendar-rsvp.git",
+    //     Path::new("/tmp/grsvp"),
+    // ).unwrap();
+
+    git::update(
         Path::new("/tmp/grsvp"),
     ).unwrap();
 }

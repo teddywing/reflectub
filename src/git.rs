@@ -26,3 +26,25 @@ pub fn mirror<P: AsRef<Path>>(
 
     Ok(())
 }
+
+pub fn update<P: AsRef<Path>>(
+    path: P,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let repo = git2::Repository::open_bare(path)?;
+
+    for remote_opt in &repo.remotes()? {
+        if let Some(remote_name) = remote_opt {
+            let mut remote = repo.find_remote(remote_name)?;
+
+            let mut fetch_options = git2::FetchOptions::new();
+            fetch_options
+                .prune(git2::FetchPrune::On)
+                .download_tags(git2::AutotagOption::All);
+
+            let refspecs: [&str; 0] = [];
+            remote.fetch(&refspecs, Some(&mut fetch_options), None)?;
+        }
+    }
+
+    Ok(())
+}
