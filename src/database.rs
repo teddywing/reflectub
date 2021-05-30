@@ -1,4 +1,5 @@
 use sqlx::{self, ConnectOptions, Connection, Executor, Row};
+use thiserror;
 
 use crate::github;
 
@@ -21,15 +22,20 @@ impl From<github::Repo> for Repo {
 }
 
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("database error")]
+    Db(#[from] sqlx::Error),
+}
+
+
 #[derive(Debug)]
 pub struct Db {
     connection: sqlx::SqliteConnection,
 }
 
 impl Db {
-    pub async fn connect(
-        path: &str,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn connect(path: &str) -> Result<Self, Error> {
         Ok(
             Db {
                 connection: sqlx::sqlite::SqliteConnectOptions::new()
@@ -41,7 +47,7 @@ impl Db {
         )
     }
 
-    pub async fn create(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn create(&mut self) -> Result<(), Error> {
         let mut tx = self.connection.begin().await?;
 
         tx.execute(r#"
@@ -62,10 +68,7 @@ impl Db {
         Ok(())
     }
 
-    pub async fn repo_get(
-        &mut self,
-        id: i64,
-    ) -> Result<Repo, Box<dyn std::error::Error>> {
+    pub async fn repo_get(&mut self, id: i64) -> Result<Repo, Error> {
         let mut tx = self.connection.begin().await?;
 
         // NOTE: Returns `RowNotFound` if not found.
@@ -85,10 +88,7 @@ impl Db {
         )
     }
 
-    pub async fn repo_insert(
-        &mut self,
-        repo: Repo,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn repo_insert(&mut self, repo: Repo) -> Result<(), Error> {
         let mut tx = self.connection.begin().await?;
 
         sqlx::query(r#"
@@ -108,12 +108,12 @@ impl Db {
         Ok(())
     }
 
-    pub fn repo_is_updated() -> Result<bool, Box<dyn std::error::Error>> {
+    pub fn repo_is_updated() -> Result<bool, Error> {
         // select id from repositories where updated_at > datetime("2020-07-13T17:57:56Z");
         Ok(false)
     }
 
-    pub fn repo_update(repo: &Repo) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn repo_update(repo: &Repo) -> Result<(), Error> {
         Ok(())
     }
 }
