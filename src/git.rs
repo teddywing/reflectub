@@ -1,4 +1,13 @@
+use thiserror;
+
 use std::path::Path;
+
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("git error")]
+    Git(#[from] git2::Error),
+}
 
 
 /// Mirror a repository.
@@ -12,7 +21,7 @@ pub fn mirror<P: AsRef<Path>>(
     url: &str,
     path: P,
     description: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Error> {
     let mut repo_init_options = git2::RepositoryInitOptions::new();
     repo_init_options.bare(true);
 
@@ -51,7 +60,7 @@ pub fn mirror<P: AsRef<Path>>(
 /// ```
 pub fn update<P: AsRef<Path>>(
     path: P,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Error> {
     let repo = git2::Repository::open_bare(path)?;
 
     for remote_opt in &repo.remotes()? {

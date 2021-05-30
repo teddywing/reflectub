@@ -1,3 +1,4 @@
+use anyhow;
 use sqlx;
 use tokio;
 
@@ -80,7 +81,7 @@ async fn main() {
 }
 
 
-fn mirror(repo: &github::Repo) -> Result<(), Box<dyn std::error::Error>> {
+fn mirror(repo: &github::Repo) -> anyhow::Result<()> {
     // mirror database
     // update description
     // copy cgitrc
