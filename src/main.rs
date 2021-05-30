@@ -1,3 +1,4 @@
+use sqlx;
 use tokio;
 
 use reflectub::{database, git, github};
@@ -55,8 +56,12 @@ async fn main() {
     //   fetch
 
     for repo in test_repos {
-        let r = db.repo_get(repo.id).await.unwrap();
-
-        dbg!(r);
+        match db.repo_get(repo.id).await {
+            Ok(_r) => (),
+            Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
+                db.repo_insert(repo.into()).await.unwrap();
+            },
+            e => panic!("{:?}", e),
+        }
     }
 }
