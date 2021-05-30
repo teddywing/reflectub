@@ -62,9 +62,9 @@ async fn main() {
         let db_repo = database::Repo::from(&repo);
 
         match db.repo_get(id).await {
-            Ok(_) => {
+            Ok(current_repo) => {
                 if db.repo_is_updated(&db_repo).await.unwrap() {
-                    update(&path, &repo).unwrap();
+                    update(&path, &current_repo, &repo).unwrap();
 
                     db.repo_update(&db_repo).await.unwrap();
                 }
@@ -116,12 +116,16 @@ fn mirror<P: AsRef<Path>>(
 
 fn update<P: AsRef<Path>>(
     repo_path: P,
-    repo: &github::Repo,
+    current_repo: &database::Repo,
+    updated_repo: &github::Repo,
 ) -> anyhow::Result<()> {
     git::update(&repo_path)?;
 
-    // TODO: Don't write if description is the same
-    git::update_description(&repo_path, repo.description())?;
+    let remote_description = updated_repo.description();
+
+    if current_repo.description() != remote_description {
+        git::update_description(&repo_path, remote_description)?;
+    }
 
     Ok(())
 }

@@ -12,6 +12,14 @@ pub struct Repo {
     updated_at: Option<String>,
 }
 
+impl Repo {
+    pub fn description(&self) -> &str {
+        self.description
+            .as_deref()
+            .unwrap_or("")
+    }
+}
+
 impl From<&github::Repo> for Repo {
     fn from(repo: &github::Repo) -> Self {
         Self {
