@@ -69,7 +69,7 @@ async fn main() {
             },
 
             Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
-                // TODO: mirror
+                mirror().unwrap();
 
                 db.repo_insert(db_repo).await.unwrap();
             },
@@ -77,4 +77,13 @@ async fn main() {
             e => panic!("{:?}", e),
         }
     }
+}
+
+
+fn mirror() -> Result<(), Box<dyn std::error::Error>> {
+    // mirror database
+    // update description
+    // copy cgitrc
+
+    Ok(())
 }
