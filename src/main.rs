@@ -156,6 +156,9 @@ fn update<P: AsRef<Path>>(
     Ok(())
 }
 
+/// Set the mtime of the repository to GitHub's `updated_at` time.
+///
+/// Used for CGit "age" sorting.
 fn update_mtime<P: AsRef<Path>>(
     repo_path: P,
     repo: &github::Repo,
