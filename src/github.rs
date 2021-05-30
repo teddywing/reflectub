@@ -42,7 +42,7 @@ impl Repo {
 
 
 /// Fetch all GitHub repositories for the given user.
-pub async fn fetch_repos() -> Result<Vec<Repo>, Error> {
+pub async fn fetch_repos(github_username: &str) -> Result<Vec<Repo>, Error> {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("Accept", "application/vnd.github.v3+json".parse()?);
 
@@ -58,7 +58,7 @@ pub async fn fetch_repos() -> Result<Vec<Repo>, Error> {
             reqwest::Method::GET,
             format!(
                 "https://api.github.com/users/{}/repos?page={}&per_page=100",
-                "teddywing",
+                github_username,
                 i,
             ),
         )

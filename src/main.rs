@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 #[tokio::main]
 async fn main() {
-    let repos = github::fetch_repos().await.unwrap();
+    let repos = github::fetch_repos("teddywing").await.unwrap();
 
     dbg!(&repos);
 
