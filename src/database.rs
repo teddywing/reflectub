@@ -11,12 +11,12 @@ pub struct Repo {
     updated_at: Option<String>,
 }
 
-impl From<github::Repo> for Repo {
-    fn from(repo: github::Repo) -> Self {
+impl From<&github::Repo> for Repo {
+    fn from(repo: &github::Repo) -> Self {
         Self {
             id: repo.id,
-            name: Some(repo.name),
-            updated_at: Some(repo.updated_at),
+            name: Some(repo.name.clone()),
+            updated_at: Some(repo.updated_at.clone()),
         }
     }
 }

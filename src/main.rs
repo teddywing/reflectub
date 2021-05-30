@@ -57,7 +57,9 @@ async fn main() {
 
     for repo in test_repos {
         let id = repo.id;
-        let db_repo = database::Repo::from(repo);
+        let clone_path = Path::new("/tmp")
+            .join(format!("{}.git", repo.name));
+        let db_repo = database::Repo::from(&repo);
 
         match db.repo_get(id).await {
             Ok(r) => {
@@ -69,7 +71,10 @@ async fn main() {
             },
 
             Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
-                mirror().unwrap();
+                mirror(
+                    &repo.git_url,
+                    &clone_path,
+                ).unwrap();
 
                 db.repo_insert(db_repo).await.unwrap();
             },
@@ -80,10 +85,15 @@ async fn main() {
 }
 
 
-fn mirror() -> Result<(), Box<dyn std::error::Error>> {
+fn mirror<P: AsRef<Path>>(
+    url: &str,
+    clone_path: P,
+) -> Result<(), Box<dyn std::error::Error>> {
     // mirror database
     // update description
     // copy cgitrc
+
+    git::mirror(url, clone_path)?;
 
     Ok(())
 }
