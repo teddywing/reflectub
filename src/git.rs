@@ -1,5 +1,7 @@
 use thiserror;
 
+use std::fs;
+use std::io::Write;
 use std::path::Path;
 
 
@@ -7,6 +9,9 @@ use std::path::Path;
 pub enum Error {
     #[error("git error")]
     Git(#[from] git2::Error),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 
@@ -20,18 +25,13 @@ pub enum Error {
 pub fn mirror<P: AsRef<Path>>(
     url: &str,
     path: P,
-    description: Option<&str>,
+    description: &str,
 ) -> Result<(), Error> {
-    let description_str = match description {
-        Some(d) => d,
-        None => "",
-    };
-
     let repo = git2::Repository::init_opts(
         path,
         &git2::RepositoryInitOptions::new()
             .bare(true)
-            .description(description_str),
+            .description(description),
     )?;
 
     let remote_name = "origin";
@@ -78,6 +78,27 @@ pub fn update<P: AsRef<Path>>(
             let refspecs: [&str; 0] = [];
             remote.fetch(&refspecs, Some(&mut fetch_options), None)?;
         }
+    }
+
+    Ok(())
+}
+
+/// Update the repository's description file.
+pub fn update_description<P: AsRef<Path>>(
+    repo_path: P,
+    description: &str,
+) -> Result<(), Error> {
+    let description_path = repo_path.as_ref().join("description");
+
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(description_path)?;
+
+    if description.is_empty() {
+        file.set_len(0)?;
+    } else {
+        writeln!(file, "{}", description)?;
     }
 
     Ok(())

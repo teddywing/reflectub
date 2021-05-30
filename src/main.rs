@@ -64,7 +64,7 @@ async fn main() {
         match db.repo_get(id).await {
             Ok(_) => {
                 if db.repo_is_updated(&db_repo).await.unwrap() {
-                    update(&path).unwrap();
+                    update(&path, &repo).unwrap();
 
                     db.repo_update(&db_repo).await.unwrap();
                 }
@@ -108,14 +108,18 @@ fn mirror<P: AsRef<Path>>(
     git::mirror(
         &repo.git_url,
         &clone_path,
-        repo.description.as_deref(),
+        repo.description(),
     )?;
 
     Ok(())
 }
 
-fn update<P: AsRef<Path>>(repo_path: P) -> anyhow::Result<()> {
-    git::update(repo_path)?;
+fn update<P: AsRef<Path>>(
+    repo_path: P,
+    repo: &github::Repo,
+) -> anyhow::Result<()> {
+    git::update(&repo_path)?;
+    git::update_description(&repo_path, repo.description())?;
 
     Ok(())
 }

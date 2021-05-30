@@ -31,6 +31,15 @@ pub struct Repo {
     pub updated_at: String,  // TODO: Maybe parse to date?
 }
 
+impl Repo {
+    /// Get the repository description or an empty string if `None`.
+    pub fn description(&self) -> &str {
+        self.description
+            .as_deref()
+            .unwrap_or("")
+    }
+}
+
 
 pub fn fetch_repos() -> Result<Vec<Repo>, Error> {
     let mut headers = reqwest::header::HeaderMap::new();
