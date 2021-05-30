@@ -154,8 +154,8 @@ impl Db {
         sqlx::query(r#"
             UPDATE repositories
             SET
-                name = ?
-                description = ?
+                name = ?,
+                description = ?,
                 updated_at = ?
             WHERE id = ?
         "#)
