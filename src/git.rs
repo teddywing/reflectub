@@ -22,14 +22,17 @@ pub fn mirror<P: AsRef<Path>>(
     path: P,
     description: Option<&str>,
 ) -> Result<(), Error> {
-    let mut repo_init_options = git2::RepositoryInitOptions::new();
-    repo_init_options.bare(true);
+    let description_str = match description {
+        Some(d) => d,
+        None => "",
+    };
 
-    if let Some(d) = description {
-        repo_init_options.description(d);
-    }
-
-    let repo = git2::Repository::init_opts(path, &repo_init_options)?;
+    let repo = git2::Repository::init_opts(
+        path,
+        &git2::RepositoryInitOptions::new()
+            .bare(true)
+            .description(description_str),
+    )?;
 
     let remote_name = "origin";
 
