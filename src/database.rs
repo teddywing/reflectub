@@ -8,6 +8,7 @@ use crate::github;
 pub struct Repo {
     id: i64,
     name: Option<String>,
+    description: Option<String>,
     updated_at: Option<String>,
 }
 
@@ -16,6 +17,7 @@ impl From<&github::Repo> for Repo {
         Self {
             id: repo.id,
             name: Some(repo.name.clone()),
+            description: repo.description.clone(),
             updated_at: Some(repo.updated_at.clone()),
         }
     }
@@ -54,6 +56,7 @@ impl Db {
             CREATE TABLE repositories (
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
+                description TEXT,
                 updated_at TEXT NOT NULL
             );
         "#).await?;
@@ -73,7 +76,11 @@ impl Db {
 
         // NOTE: Returns `RowNotFound` if not found.
         let row = sqlx::query(r#"
-            SELECT id, name, updated_at
+            SELECT
+                id,
+                name,
+                description,
+                updated_at
             FROM repositories
             WHERE id = ?
         "#)
@@ -87,7 +94,8 @@ impl Db {
             Repo {
                 id: row.get(0),
                 name: Some(row.get(1)),
-                updated_at: Some(row.get(2)),
+                description: row.get(2),
+                updated_at: Some(row.get(3)),
             }
         )
     }
@@ -97,12 +105,13 @@ impl Db {
 
         sqlx::query(r#"
             INSERT INTO repositories
-                (id, name, updated_at)
+                (id, name, description, updated_at)
                 VALUES
-                (?, ?, ?)
+                (?, ?, ?, ?)
         "#)
             .bind(repo.id)
             .bind(&repo.name)
+            .bind(&repo.description)
             .bind(&repo.updated_at)
             .execute(&mut tx)
             .await?;
@@ -144,9 +153,14 @@ impl Db {
 
         sqlx::query(r#"
             UPDATE repositories
-            SET updated_at = ?
+            SET
+                name = ?
+                description = ?
+                updated_at = ?
             WHERE id = ?
         "#)
+            .bind(&repo.name)
+            .bind(&repo.description)
             .bind(&repo.updated_at)
             .bind(repo.id)
             .execute(&mut tx)
