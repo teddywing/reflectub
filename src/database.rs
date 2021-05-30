@@ -72,7 +72,11 @@ impl Db {
         let mut tx = self.connection.begin().await?;
 
         // NOTE: Returns `RowNotFound` if not found.
-        let row = sqlx::query("SELECT id, name FROM repositories where id = ?")
+        let row = sqlx::query(r#"
+            SELECT id, name, updated_at
+            FROM repositories
+            WHERE id = ?
+        "#)
             .bind(id)
             .fetch_one(&mut tx)
             .await?;
@@ -83,7 +87,7 @@ impl Db {
             Repo {
                 id: row.get(0),
                 name: Some(row.get(1)),
-                updated_at: None,
+                updated_at: Some(row.get(2)),
             }
         )
     }
@@ -108,9 +112,31 @@ impl Db {
         Ok(())
     }
 
-    pub fn repo_is_updated() -> Result<bool, Error> {
-        // select id from repositories where updated_at > datetime("2020-07-13T17:57:56Z");
-        Ok(false)
+    pub async fn repo_is_updated(
+        &mut self,
+        repo: &Repo,
+    ) -> Result<bool, Error> {
+        let mut tx = self.connection.begin().await?;
+
+        let is_updated = match sqlx::query(r#"
+            SELECT 1
+            FROM repositories
+            WHERE id = ?
+                AND datetime(updated_at) < datetime(?)
+        "#)
+            .bind(repo.id)
+            .bind(&repo.updated_at)
+            .fetch_one(&mut tx)
+            .await
+        {
+            Ok(r) => Ok(true),
+            Err(sqlx::Error::RowNotFound) => Ok(false),
+            Err(e) => Err(e.into()),
+        };
+
+        tx.commit().await?;
+
+        is_updated
     }
 
     pub fn repo_update(repo: &Repo) -> Result<(), Error> {

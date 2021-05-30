@@ -56,11 +56,22 @@ async fn main() {
     //   fetch
 
     for repo in test_repos {
-        match db.repo_get(repo.id).await {
-            Ok(_r) => (),
-            Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
-                db.repo_insert(repo.into()).await.unwrap();
+        let id = repo.id;
+        let db_repo = database::Repo::from(repo);
+
+        match db.repo_get(id).await {
+            Ok(r) => {
+                // TODO: fetch
+
+                if db.repo_is_updated(&db_repo).await.unwrap() {
+                    dbg!("UPDATED", &db_repo);
+                }
             },
+
+            Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
+                db.repo_insert(db_repo).await.unwrap();
+            },
+
             e => panic!("{:?}", e),
         }
     }
