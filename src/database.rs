@@ -126,11 +126,11 @@ impl Db {
         "#)
             .bind(repo.id)
             .bind(&repo.updated_at)
-            .fetch_one(&mut tx)
+            .fetch_optional(&mut tx)
             .await
         {
-            Ok(r) => Ok(true),
-            Err(sqlx::Error::RowNotFound) => Ok(false),
+            Ok(Some(_)) => Ok(true),
+            Ok(None) => Ok(false),
             Err(e) => Err(e.into()),
         };
 
