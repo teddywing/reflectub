@@ -4,7 +4,7 @@ use tokio;
 
 use reflectub::{database, git, github};
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 
 #[tokio::main]
@@ -58,6 +58,7 @@ async fn main() {
 
     for repo in test_repos {
         let id = repo.id;
+        let path = clone_path("/tmp", &repo);
         let db_repo = database::Repo::from(&repo);
 
         match db.repo_get(id).await {
@@ -70,7 +71,7 @@ async fn main() {
             },
 
             Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
-                mirror(&repo).unwrap();
+                mirror(&path, &repo).unwrap();
 
                 db.repo_insert(db_repo).await.unwrap();
             },
@@ -81,13 +82,28 @@ async fn main() {
 }
 
 
-fn mirror(repo: &github::Repo) -> anyhow::Result<()> {
+fn clone_path<P: AsRef<Path>>(base_path: P, repo: &github::Repo) -> PathBuf {
+    let git_dir = format!("{}.git", repo.name);
+
+    if repo.fork {
+        base_path
+            .as_ref()
+            .join("fork")
+            .join(git_dir)
+    } else {
+        base_path
+            .as_ref()
+            .join(git_dir)
+    }
+}
+
+fn mirror<P: AsRef<Path>>(
+    clone_path: P,
+    repo: &github::Repo,
+) -> anyhow::Result<()> {
     // mirror database
     // update description
     // copy cgitrc
-
-    let clone_path = Path::new("/tmp")
-        .join(format!("{}.git", repo.name));
 
     git::mirror(
         &repo.git_url,
