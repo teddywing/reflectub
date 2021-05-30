@@ -119,6 +119,8 @@ fn update<P: AsRef<Path>>(
     repo: &github::Repo,
 ) -> anyhow::Result<()> {
     git::update(&repo_path)?;
+
+    // TODO: Don't write if description is the same
     git::update_description(&repo_path, repo.description())?;
 
     Ok(())
