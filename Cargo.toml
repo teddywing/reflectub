@@ -5,6 +5,8 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.40"
+chrono = "0.4.19"
+filetime = "0.2.14"
 git2 = "0.13.20"
 reqwest = { version = "0.11.3", features = ["json"] }
 serde = { version = "1.0.126", features = ["derive"] }

@@ -1,4 +1,6 @@
 use anyhow::{self, Context};
+use chrono::DateTime;
+use filetime;
 use sqlx;
 use tokio;
 
@@ -10,9 +12,9 @@ use std::path::{Path, PathBuf};
 
 #[tokio::main]
 async fn main() {
-    let repos = github::fetch_repos("teddywing").await.unwrap();
-
-    dbg!(&repos);
+    // let repos = github::fetch_repos("teddywing").await.unwrap();
+    //
+    // dbg!(&repos);
 
     // git::mirror(
     //     "https://github.com/teddywing/google-calendar-rsvp.git",
@@ -22,6 +24,8 @@ async fn main() {
     // git::update(
     //     Path::new("/tmp/grsvp"),
     // ).unwrap();
+
+    run().await.unwrap();
 }
 
 async fn run() -> anyhow::Result<()> {
@@ -129,6 +133,8 @@ fn mirror<P: AsRef<Path>>(
             ))?;
     }
 
+    update_mtime(&clone_path, &repo)?;
+
     Ok(())
 }
 
@@ -144,6 +150,30 @@ fn update<P: AsRef<Path>>(
     if current_repo.description() != remote_description {
         git::update_description(&repo_path, remote_description)?;
     }
+
+    update_mtime(&repo_path, &updated_repo)?;
+
+    Ok(())
+}
+
+fn update_mtime<P: AsRef<Path>>(
+    repo_path: P,
+    repo: &github::Repo,
+) -> anyhow::Result<()> {
+    let default_branch_ref = repo_path
+        .as_ref()
+        .join("refs/heads")
+        .join(&repo.default_branch);
+
+    let update_time = filetime::FileTime::from_system_time(
+        DateTime::parse_from_rfc3339(&repo.updated_at)?.into()
+    );
+
+    filetime::set_file_times(&default_branch_ref, update_time, update_time)
+        .with_context(|| format!(
+            "unable to set mtime on '{}'",
+            &default_branch_ref.display(),
+        ))?;
 
     Ok(())
 }
