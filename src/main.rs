@@ -62,7 +62,7 @@ async fn main() {
         let db_repo = database::Repo::from(&repo);
 
         match db.repo_get(id).await {
-            Ok(r) => {
+            Ok(_) => {
                 if db.repo_is_updated(&db_repo).await.unwrap() {
                     update(&path).unwrap();
 
