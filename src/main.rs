@@ -107,10 +107,6 @@ fn mirror<P: AsRef<Path>>(
     repo: &github::Repo,
     base_cgitrc: Option<P>,
 ) -> anyhow::Result<()> {
-    // mirror database
-    // update description
-    // copy cgitrc
-
     git::mirror(
         &repo.git_url,
         &clone_path,
