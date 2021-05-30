@@ -53,7 +53,7 @@ impl Db {
         let mut tx = self.connection.begin().await?;
 
         tx.execute(r#"
-            CREATE TABLE repositories (
+            CREATE TABLE IF NOT EXISTS repositories (
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
                 description TEXT,
@@ -62,7 +62,7 @@ impl Db {
         "#).await?;
 
         tx.execute(r#"
-            CREATE UNIQUE INDEX idx_repositories_id
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_repositories_id
                 ON repositories (id);
         "#).await?;
 

@@ -47,7 +47,7 @@ async fn main() {
 
     let mut db = database::Db::connect("test.db").await.unwrap();
 
-    // db.create().await.unwrap();
+    db.create().await.unwrap();
 
     // If repo !exists
     //   insert
