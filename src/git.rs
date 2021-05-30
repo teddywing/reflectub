@@ -11,8 +11,16 @@ use std::path::Path;
 pub fn mirror<P: AsRef<Path>>(
     url: &str,
     path: P,
+    description: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let repo = git2::Repository::init_bare(path)?;
+    let mut repo_init_options = git2::RepositoryInitOptions::new();
+    repo_init_options.bare(true);
+
+    if let Some(d) = description {
+        repo_init_options.description(d);
+    }
+
+    let repo = git2::Repository::init_opts(path, &repo_init_options)?;
 
     let remote_name = "origin";
 

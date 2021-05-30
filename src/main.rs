@@ -74,6 +74,7 @@ async fn main() {
                 mirror(
                     &repo.git_url,
                     &clone_path,
+                    repo.description.as_deref(),
                 ).unwrap();
 
                 db.repo_insert(db_repo).await.unwrap();
@@ -88,12 +89,13 @@ async fn main() {
 fn mirror<P: AsRef<Path>>(
     url: &str,
     clone_path: P,
+    description: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // mirror database
     // update description
     // copy cgitrc
 
-    git::mirror(url, clone_path)?;
+    git::mirror(url, clone_path, description)?;
 
     Ok(())
 }
