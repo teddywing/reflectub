@@ -41,6 +41,7 @@ impl Repo {
 }
 
 
+/// Fetch all GitHub repositories for the given user.
 pub async fn fetch_repos() -> Result<Vec<Repo>, Error> {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("Accept", "application/vnd.github.v3+json".parse()?);
