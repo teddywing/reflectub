@@ -1,4 +1,4 @@
-use reqwest::blocking::ClientBuilder;
+use reqwest::ClientBuilder;
 use serde::Deserialize;
 use thiserror;
 
@@ -41,7 +41,7 @@ impl Repo {
 }
 
 
-pub fn fetch_repos() -> Result<Vec<Repo>, Error> {
+pub async fn fetch_repos() -> Result<Vec<Repo>, Error> {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("Accept", "application/vnd.github.v3+json".parse()?);
 
@@ -50,15 +50,28 @@ pub fn fetch_repos() -> Result<Vec<Repo>, Error> {
         .default_headers(headers)
         .build()?;
 
-    let repos = client.request(
-        reqwest::Method::GET,
-        format!(
-            "https://api.github.com/users/{}/repos",
-            "teddywing",
-        ),
-    )
-        .send()?
-        .json::<Vec<Repo>>()?;
+    let mut repos = Vec::new();
+
+    for i in 1.. {
+        let repo_page = client.request(
+            reqwest::Method::GET,
+            format!(
+                "https://api.github.com/users/{}/repos?page={}&per_page=100",
+                "teddywing",
+                i,
+            ),
+        )
+            .send()
+            .await?
+            .json::<Vec<Repo>>()
+            .await?;
+
+        if repo_page.is_empty() {
+            break;
+        }
+
+        repos.extend(repo_page);
+    }
 
     Ok(repos)
 }

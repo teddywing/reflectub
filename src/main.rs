@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 
 #[tokio::main]
 async fn main() {
-    // let repos = github::fetch_repos().unwrap();
-    //
-    // dbg!(&repos);
+    let repos = github::fetch_repos().await.unwrap();
+
+    dbg!(&repos);
 
     // git::mirror(
     //     "https://github.com/teddywing/google-calendar-rsvp.git",
