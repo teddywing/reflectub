@@ -139,7 +139,21 @@ impl Db {
         is_updated
     }
 
-    pub fn repo_update(repo: &Repo) -> Result<(), Error> {
+    pub async fn repo_update(&mut self, repo: &Repo) -> Result<(), Error> {
+        let mut tx = self.connection.begin().await?;
+
+        sqlx::query(r#"
+            UPDATE repositories
+            SET updated_at = ?
+            WHERE id = ?
+        "#)
+            .bind(&repo.updated_at)
+            .bind(repo.id)
+            .execute(&mut tx)
+            .await?;
+
+        tx.commit().await?;
+
         Ok(())
     }
 }

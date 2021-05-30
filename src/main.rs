@@ -61,10 +61,10 @@ async fn main() {
 
         match db.repo_get(id).await {
             Ok(r) => {
-                // TODO: fetch
-
                 if db.repo_is_updated(&db_repo).await.unwrap() {
-                    dbg!("UPDATED", &db_repo);
+                    // TODO: fetch
+
+                    db.repo_update(&db_repo).await.unwrap();
                 }
             },
 
