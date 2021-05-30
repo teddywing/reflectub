@@ -1,9 +1,10 @@
-use anyhow;
+use anyhow::{self, Context};
 use sqlx;
 use tokio;
 
 use reflectub::{database, git, github};
 
+use std::fs;
 use std::path::{Path, PathBuf};
 
 
@@ -71,7 +72,7 @@ async fn main() {
             },
 
             Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
-                mirror(&path, &repo).unwrap();
+                mirror(&path, &repo, &"./cgitrc".to_owned().into()).unwrap();
 
                 db.repo_insert(db_repo).await.unwrap();
             },
@@ -100,6 +101,7 @@ fn clone_path<P: AsRef<Path>>(base_path: P, repo: &github::Repo) -> PathBuf {
 fn mirror<P: AsRef<Path>>(
     clone_path: P,
     repo: &github::Repo,
+    base_cgitrc: P,
 ) -> anyhow::Result<()> {
     // mirror database
     // update description
@@ -110,6 +112,15 @@ fn mirror<P: AsRef<Path>>(
         &clone_path,
         repo.description(),
     )?;
+
+    // Copy the base cgitrc file into the newly-cloned repository.
+    let cgitrc_path = clone_path.as_ref().join("cgitrc");
+    fs::copy(&base_cgitrc, &cgitrc_path)
+        .with_context(|| format!(
+            "unable to copy '{}' to '{}'",
+            "./cgitrc",
+            &cgitrc_path.display(),
+        ))?;
 
     Ok(())
 }
