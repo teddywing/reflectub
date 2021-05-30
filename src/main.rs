@@ -69,6 +69,8 @@ async fn main() {
             },
 
             Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
+                // TODO: mirror
+
                 db.repo_insert(db_repo).await.unwrap();
             },
 
