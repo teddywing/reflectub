@@ -22,7 +22,9 @@ async fn main() {
     // git::update(
     //     Path::new("/tmp/grsvp"),
     // ).unwrap();
+}
 
+async fn run() -> anyhow::Result<()> {
     let test_repos = vec![
         github::Repo {
             id: 18086664,
@@ -84,6 +86,8 @@ async fn main() {
             e => panic!("{:?}", e),
         }
     }
+
+    Ok(())
 }
 
 
