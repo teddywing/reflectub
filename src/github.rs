@@ -57,7 +57,7 @@ pub async fn fetch_repos(github_username: &str) -> Result<Vec<Repo>, Error> {
         let repo_page = client.request(
             reqwest::Method::GET,
             format!(
-                "https://api.github.com/users/{}/repos?page={}&per_page=100",
+                "https://api.github.com/users/{}/repos?page={}&per_page=100&sort=updated",
                 github_username,
                 i,
             ),
