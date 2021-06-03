@@ -7,6 +7,7 @@ use tokio;
 use reflectub::{database, git, github};
 
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 
 
@@ -174,7 +175,36 @@ fn update_mtime<P: AsRef<Path>>(
         DateTime::parse_from_rfc3339(&repo.updated_at)?.into()
     );
 
-    filetime::set_file_times(&default_branch_ref, update_time, update_time)
+    // Try updating times on the default ref.
+    match filetime::set_file_times(
+        &default_branch_ref,
+        update_time,
+        update_time,
+    ) {
+        Ok(_) => Ok(()),
+        Err(e) => match e.kind() {
+            // If the default ref file doesn't exist, update times on the
+            // 'packed-refs' file.
+            io::ErrorKind::NotFound => {
+                let packed_refs_path = repo_path
+                    .as_ref()
+                    .join("packed-refs");
+
+                Ok(
+                    filetime::set_file_times(
+                        &packed_refs_path,
+                        update_time,
+                        update_time,
+                    )
+                        .with_context(|| format!(
+                            "unable to set mtime on '{}'",
+                            &packed_refs_path.display(),
+                        ))?
+                )
+            },
+            _ => Err(e),
+        },
+    }
         .with_context(|| format!(
             "unable to set mtime on '{}'",
             &default_branch_ref.display(),
