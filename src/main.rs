@@ -31,13 +31,15 @@ async fn main() {
 async fn run() -> anyhow::Result<()> {
     let test_repos = vec![
         github::Repo {
-            id: 18086664,
-            name: "angular.js".to_owned(),
-            description: None,
+            id: 345367151,
+            name: "DDHotKey".to_owned(),
+            description: Some(
+                "Simple Cocoa global hotkeys".to_owned(),
+            ),
             fork: true,
-            git_url: "git://github.com/teddywing/angular.js.git".to_owned(),
+            git_url: "git://github.com/teddywing/DDHotKey.git".to_owned(),
             default_branch: "master".to_owned(),
-            updated_at: "2014-03-25T06:55:16Z".to_owned(),
+            updated_at: "2021-03-07T14:27:06Z".to_owned(),
         },
         github::Repo {
             id: 312106271,
