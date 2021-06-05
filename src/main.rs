@@ -1,18 +1,55 @@
 use anyhow::{self, Context};
 use chrono::DateTime;
+use exitcode;
 use filetime;
+use getopts::Options;
 use sqlx;
 use tokio;
 
 use reflectub::{database, git, github};
 
+use std::env;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::process;
 
 
 #[tokio::main]
 async fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+
+    opts.optopt("d", "database", "SQLite database file path (required)", "DATABASE_FILE");
+    opts.optopt("", "cgitrc", "base cgitrc file to copy to mirrored repositories", "CGITRC_FILE");
+    opts.optflag("h", "help", "print this help menu");
+    opts.optflag("V", "version", "show the program version");
+
+    let opt_matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("error: {}", e);
+
+            process::exit(exitcode::SOFTWARE);
+        },
+    };
+
+    if opt_matches.opt_present("h") {
+        print_usage(&opts);
+        process::exit(exitcode::USAGE);
+    }
+
+    if opt_matches.opt_present("V") {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        process::exit(exitcode::OK);
+    }
+
+    if opt_matches.free.len() != 2 {
+        print_usage(&opts);
+        process::exit(exitcode::USAGE);
+    }
+
     // let repos = github::fetch_repos("teddywing").await.unwrap();
     //
     // dbg!(&repos);
@@ -27,6 +64,13 @@ async fn main() {
     // ).unwrap();
 
     run().await.unwrap();
+}
+
+fn print_usage(opts: &Options) {
+    print!(
+        "{}",
+        opts.usage("usage: reflectub [options] -d DATABASE <github_username> <repository_path>"),
+    );
 }
 
 async fn run() -> anyhow::Result<()> {
