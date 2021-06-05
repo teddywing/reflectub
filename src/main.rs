@@ -94,19 +94,14 @@ async fn run() -> anyhow::Result<()> {
 
     db.create().await?;
 
-    // If repo !exists
-    //   insert
-    //   mirror
-    // Else
-    //   Update updated_at
-    //   fetch
-
     for repo in test_repos {
         let id = repo.id;
         let path = clone_path(&mirror_root, &repo);
         let db_repo = database::Repo::from(&repo);
 
         match db.repo_get(id).await {
+            // If we've already seen the repo and it's been updated, fetch the
+            // latest.
             Ok(current_repo) => {
                 if db.repo_is_updated(&db_repo).await? {
                     update(&path, &current_repo, &repo)?;
@@ -115,6 +110,8 @@ async fn run() -> anyhow::Result<()> {
                 }
             },
 
+            // If the repo doesn't exist, mirror it and store it in the
+            // database.
             Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
                 mirror(
                     &path,
