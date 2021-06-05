@@ -17,19 +17,6 @@ use std::process;
 
 #[tokio::main]
 async fn main() {
-    // let repos = github::fetch_repos("teddywing").await.unwrap();
-    //
-    // dbg!(&repos);
-
-    // git::mirror(
-    //     "https://github.com/teddywing/google-calendar-rsvp.git",
-    //     Path::new("/tmp/grsvp"),
-    // ).unwrap();
-
-    // git::update(
-    //     Path::new("/tmp/grsvp"),
-    // ).unwrap();
-
     run().await.unwrap();
 }
 
