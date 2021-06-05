@@ -76,6 +76,8 @@ async fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
+    // let repos = github::fetch_repos(username).await.unwrap();
+
     let test_repos = vec![
         github::Repo {
             id: 345367151,
