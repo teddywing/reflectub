@@ -63,7 +63,7 @@ async fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    // let repos = github::fetch_repos(username).await.unwrap();
+    // let repos = github::fetch_repos(username).await?
 
     let test_repos = vec![
         github::Repo {
@@ -90,9 +90,9 @@ async fn run() -> anyhow::Result<()> {
         },
     ];
 
-    let mut db = database::Db::connect(&database_file).await.unwrap();
+    let mut db = database::Db::connect(&database_file).await?;
 
-    db.create().await.unwrap();
+    db.create().await?;
 
     // If repo !exists
     //   insert
@@ -108,10 +108,10 @@ async fn run() -> anyhow::Result<()> {
 
         match db.repo_get(id).await {
             Ok(current_repo) => {
-                if db.repo_is_updated(&db_repo).await.unwrap() {
-                    update(&path, &current_repo, &repo).unwrap();
+                if db.repo_is_updated(&db_repo).await? {
+                    update(&path, &current_repo, &repo)?;
 
-                    db.repo_update(&db_repo).await.unwrap();
+                    db.repo_update(&db_repo).await?;
                 }
             },
 
@@ -120,12 +120,12 @@ async fn run() -> anyhow::Result<()> {
                     &path,
                     &repo,
                     base_cgitrc.as_ref(),
-                ).unwrap();
+                )?;
 
-                db.repo_insert(db_repo).await.unwrap();
+                db.repo_insert(db_repo).await?;
             },
 
-            e => panic!("{:?}", e),
+            Err(e) => anyhow::bail!(e),
         }
     }
 
