@@ -70,6 +70,12 @@ async fn run() -> anyhow::Result<()> {
         process::exit(exitcode::USAGE);
     }
 
+    let username = &opt_matches.free[0];
+    let mirror_root = &opt_matches.free[1];
+
+    let base_cgitrc = opt_matches.opt_str("cgitrc")
+        .map(|s| PathBuf::from(s));
+
     let test_repos = vec![
         github::Repo {
             id: 345367151,
@@ -108,7 +114,7 @@ async fn run() -> anyhow::Result<()> {
 
     for repo in test_repos {
         let id = repo.id;
-        let path = clone_path("/tmp", &repo);
+        let path = clone_path(&mirror_root, &repo);
         let db_repo = database::Repo::from(&repo);
 
         match db.repo_get(id).await {
@@ -124,7 +130,7 @@ async fn run() -> anyhow::Result<()> {
                 mirror(
                     &path,
                     &repo,
-                    Some(&"./cgitrc".to_owned().into()),
+                    base_cgitrc.as_ref(),
                 ).unwrap();
 
                 db.repo_insert(db_repo).await.unwrap();
