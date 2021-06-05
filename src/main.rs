@@ -62,6 +62,9 @@ async fn run() -> anyhow::Result<()> {
         process::exit(exitcode::OK);
     }
 
+    let database_file = opt_matches.opt_str("database")
+        .ok_or(anyhow::anyhow!("missing required argument '--database'"))?;
+
     if opt_matches.free.len() != 2 {
         print_usage(&opts);
         process::exit(exitcode::USAGE);
@@ -92,7 +95,7 @@ async fn run() -> anyhow::Result<()> {
         },
     ];
 
-    let mut db = database::Db::connect("test.db").await.unwrap();
+    let mut db = database::Db::connect(&database_file).await.unwrap();
 
     db.create().await.unwrap();
 
