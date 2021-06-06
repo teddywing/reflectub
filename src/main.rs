@@ -145,6 +145,7 @@ fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Mirror or update `repo`.
 async fn process_repo(
     repo: &github::Repo,
     db: &mut database::Db,
@@ -192,6 +193,7 @@ async fn process_repo(
 }
 
 
+/// Return `true` if `size_kilobytes` is larger than `max_repo_size_bytes`.
 fn is_repo_oversize(
     size_kilobytes: u64,
     max_repo_size_bytes: u64,
@@ -205,6 +207,9 @@ fn is_repo_oversize(
     false
 }
 
+/// Get the clone path for a repository.
+///
+/// If `repo` is a fork, add `/fork/` to `base_path`.
 fn clone_path<P: AsRef<Path>>(base_path: P, repo: &github::Repo) -> PathBuf {
     let git_dir = format!("{}.git", repo.name);
 
@@ -220,6 +225,7 @@ fn clone_path<P: AsRef<Path>>(base_path: P, repo: &github::Repo) -> PathBuf {
     }
 }
 
+/// Mirror a repository.
 fn mirror<P: AsRef<Path>>(
     clone_path: P,
     repo: &github::Repo,
@@ -248,6 +254,7 @@ fn mirror<P: AsRef<Path>>(
     Ok(())
 }
 
+/// Update a previously-mirrored repository.
 fn update<P: AsRef<Path>>(
     repo_path: P,
     current_repo: &database::Repo,
