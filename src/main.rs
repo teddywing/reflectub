@@ -76,6 +76,8 @@ fn run() -> anyhow::Result<()> {
     let username = &opt_matches.free[0];
     let mirror_root = &opt_matches.free[1];
 
+    // Parse the maximum repo size and return an error if it fails. If the size
+    // is `None`, set the value to `None`.
     let max_repo_size_bytes = opt_matches.opt_str("skip-larger-than")
         .map_or(
             Ok(None),
