@@ -91,37 +91,13 @@ fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    let rt = tokio::runtime::Builder::new_multi_thread().build()?;
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_io()
+        .enable_time()
+        .build()?;
     let _rt_guard = rt.enter();
 
-    // let repos = github::fetch_repos(username).await?
-
-    let test_repos = vec![
-        github::Repo {
-            id: 345367151,
-            name: "DDHotKey".to_owned(),
-            description: Some(
-                "Simple Cocoa global hotkeys".to_owned(),
-            ),
-            fork: true,
-            git_url: "git://github.com/teddywing/DDHotKey.git".to_owned(),
-            default_branch: "master".to_owned(),
-            size: 81,
-            updated_at: "2021-03-07T14:27:06Z".to_owned(),
-        },
-        github::Repo {
-            id: 312106271,
-            name: "apple-developer-objc".to_owned(),
-            description: Some(
-                "A user script that forces Apple Developer documentation to use Objective-C".to_owned(),
-            ),
-            fork: false,
-            git_url: "git://github.com/teddywing/apple-developer-objc.git".to_owned(),
-            default_branch: "master".to_owned(),
-            size: 13,
-            updated_at: "2020-11-11T22:49:53Z".to_owned(),
-        },
-    ];
+    let repos = executor::block_on(github::fetch_repos(username))?;
 
     let db = Arc::new(
         tokio::sync::Mutex::new(
@@ -135,7 +111,7 @@ fn run() -> anyhow::Result<()> {
 
     let mut joins = Vec::new();
 
-    for repo in test_repos {
+    for repo in repos {
         let db = db.clone();
         let mirror_root = mirror_root.clone();
         let base_cgitrc = base_cgitrc.clone();
