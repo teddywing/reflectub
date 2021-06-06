@@ -4,5 +4,5 @@ TODO
 v Change updated time of the Git repo to updated_at
 
 2021.06.05:
-- Add a way to exclude repositories
-- Option to not mirror repositories over a given size
+x Add a way to exclude repositories (2021.06.06: the max size option provides what I was looking for with this option)
+v Option to not mirror repositories over a given size (2021.06.06)
