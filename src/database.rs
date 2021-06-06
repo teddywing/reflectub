@@ -4,6 +4,7 @@ use thiserror;
 use crate::github;
 
 
+/// Repository metadata mapped to the database.
 #[derive(Debug)]
 pub struct Repo {
     id: i64,
@@ -45,6 +46,7 @@ pub struct Db {
 }
 
 impl Db {
+    /// Open a connection to the database.
     pub async fn connect(path: &str) -> Result<Self, Error> {
         Ok(
             Db {
@@ -57,6 +59,7 @@ impl Db {
         )
     }
 
+    /// Initialise the database with tables and indexes.
     pub async fn create(&mut self) -> Result<(), Error> {
         let mut tx = self.connection.begin().await?;
 
@@ -79,10 +82,12 @@ impl Db {
         Ok(())
     }
 
+    /// Get a repository by its ID.
+    ///
+    /// Returns a `sqlx::Error::RowNotFound` error if the row doesn't exist.
     pub async fn repo_get(&mut self, id: i64) -> Result<Repo, Error> {
         let mut tx = self.connection.begin().await?;
 
-        // NOTE: Returns `RowNotFound` if not found.
         let row = sqlx::query(r#"
             SELECT
                 id,
@@ -108,6 +113,7 @@ impl Db {
         )
     }
 
+    /// Insert a new repository.
     pub async fn repo_insert(&mut self, repo: Repo) -> Result<(), Error> {
         let mut tx = self.connection.begin().await?;
 
@@ -129,6 +135,10 @@ impl Db {
         Ok(())
     }
 
+    /// Check if the given repository is newer than the one in the repository.
+    ///
+    /// Compares the `updated_at` field to find out whether the repository was
+    /// updated.
     pub async fn repo_is_updated(
         &mut self,
         repo: &Repo,
@@ -156,6 +166,7 @@ impl Db {
         is_updated
     }
 
+    /// Update an existing repository.
     pub async fn repo_update(&mut self, repo: &Repo) -> Result<(), Error> {
         let mut tx = self.connection.begin().await?;
 
