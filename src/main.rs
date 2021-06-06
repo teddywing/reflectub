@@ -77,14 +77,16 @@ fn run() -> anyhow::Result<()> {
     let mirror_root = &opt_matches.free[1];
 
     let max_repo_size_bytes = opt_matches.opt_str("skip-larger-than")
-        .map(|s|
-            parse_size(&s)
-                .with_context(|| format!(
-                    "unable to parse max file size '{}'",
-                    s
-                ))
-                .unwrap()
-        );
+        .map_or(
+            Ok(None),
+            |s|
+                parse_size(&s)
+                    .map(|s| Some(s))
+                    .with_context(|| format!(
+                        "unable to parse max file size '{}'",
+                        s
+                    ))
+        )?;
 
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
