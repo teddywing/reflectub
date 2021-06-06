@@ -108,7 +108,8 @@ fn run() -> anyhow::Result<()> {
     );
 
     executor::block_on(async {
-        db.lock().await.create().await
+        db.lock().await
+            .create().await
     })?;
 
     let mut joins = Vec::new();
