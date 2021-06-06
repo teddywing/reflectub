@@ -19,7 +19,20 @@ use std::sync::Arc;
 
 
 fn main() {
-    run().unwrap();
+    match run() {
+        Ok(_) => (),
+        Err(e) => {
+            eprint!("error");
+
+            for cause in e.chain() {
+                eprint!(": {}", cause);
+            }
+
+            eprintln!();
+
+            process::exit(exitcode::SOFTWARE);
+        },
+    };
 }
 
 fn print_usage(opts: &Options) {
