@@ -64,7 +64,7 @@ fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    let rt = tokio::runtime::Runtime::new()?;
+    let rt = tokio::runtime::Builder::new_multi_thread().build()?;
     let _rt_guard = rt.enter();
 
     // let repos = github::fetch_repos(username).await?
