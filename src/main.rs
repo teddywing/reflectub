@@ -2,11 +2,12 @@ use anyhow::{self, Context};
 use chrono::DateTime;
 use exitcode;
 use filetime;
-use futures::{executor, future};
+use futures::{self, executor, future};
 use getopts::Options;
 use parse_size::parse_size;
 use sqlx;
 use tokio;
+use tokio_stream::StreamExt;
 
 use reflectub::{database, git, github};
 
@@ -99,20 +100,21 @@ fn run() -> anyhow::Result<()> {
         .build()?;
     let _rt_guard = rt.enter();
 
-    let repos = executor::block_on(github::fetch_repos(username))?;
+    let repos = rt.block_on(github::fetch_repos(username))?;
 
     let db = Arc::new(
         tokio::sync::Mutex::new(
-            executor::block_on(database::Db::connect(&database_file))?,
+            rt.block_on(database::Db::connect(&database_file))?,
         )
     );
 
-    executor::block_on(async {
+    rt.block_on(async {
         db.lock().await
             .create().await
     })?;
 
-    let mut joins = Vec::new();
+    // let mut joins = futures::stream::FuturesUnordered::new();
+    let mut joins = Vec::with_capacity(repos.len());
 
     for repo in repos {
         let db = db.clone();
@@ -134,7 +136,17 @@ fn run() -> anyhow::Result<()> {
         joins.push(join);
     }
 
-    executor::block_on(future::join_all(joins));
+    // executor::block_on(future::join_all(joins));
+    rt.block_on(async {
+        let mut joins = tokio_stream::iter(&joins);
+
+        while let Some(task) = joins.next().await {
+            let a = task.await?;
+            dbg!(a);
+        }
+
+        Ok::<(), anyhow::Error>(())
+    })?;
 
     Ok(())
 }
