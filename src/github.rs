@@ -28,6 +28,7 @@ pub struct Repo {
     pub fork: bool,
     pub git_url: String,
     pub default_branch: String,
+    pub size: u64,
     pub updated_at: String,  // TODO: Maybe parse to date?
 }
 

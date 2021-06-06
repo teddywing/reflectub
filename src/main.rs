@@ -4,6 +4,7 @@ use exitcode;
 use filetime;
 use futures::{executor, future};
 use getopts::Options;
+use parse_size::parse_size;
 use sqlx;
 use tokio;
 
@@ -35,6 +36,7 @@ fn run() -> anyhow::Result<()> {
 
     opts.optopt("d", "database", "SQLite database file path (required)", "DATABASE_FILE");
     opts.optopt("", "cgitrc", "base cgitrc file to copy to mirrored repositories", "CGITRC_FILE");
+    opts.optopt("", "skip-larger-than", "skip repositories larger than SIZE", "SIZE");
     opts.optflag("h", "help", "print this help menu");
     opts.optflag("V", "version", "show the program version");
 
@@ -61,6 +63,16 @@ fn run() -> anyhow::Result<()> {
     let username = &opt_matches.free[0];
     let mirror_root = &opt_matches.free[1];
 
+    let max_repo_size_bytes = opt_matches.opt_str("skip-larger-than")
+        .map(|s|
+            parse_size(&s)
+                .with_context(|| format!(
+                    "unable to parse max file size '{}'",
+                    s
+                ))
+                .unwrap()
+        );
+
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
@@ -79,6 +91,7 @@ fn run() -> anyhow::Result<()> {
             fork: true,
             git_url: "git://github.com/teddywing/DDHotKey.git".to_owned(),
             default_branch: "master".to_owned(),
+            size: 81,
             updated_at: "2021-03-07T14:27:06Z".to_owned(),
         },
         github::Repo {
@@ -90,6 +103,7 @@ fn run() -> anyhow::Result<()> {
             fork: false,
             git_url: "git://github.com/teddywing/apple-developer-objc.git".to_owned(),
             default_branch: "master".to_owned(),
+            size: 13,
             updated_at: "2020-11-11T22:49:53Z".to_owned(),
         },
     ];
@@ -119,6 +133,7 @@ fn run() -> anyhow::Result<()> {
                 &mut db,
                 &mirror_root,
                 base_cgitrc,
+                max_repo_size_bytes,
             ).await
         });
 
@@ -135,7 +150,14 @@ async fn process_repo(
     db: &mut database::Db,
     mirror_root: &str,
     base_cgitrc: Option<PathBuf>,
+    max_repo_size_bytes: Option<u64>,
 ) -> anyhow::Result<()> {
+    if let Some(max_repo_size_bytes) = max_repo_size_bytes {
+        if is_repo_oversize(repo.size, max_repo_size_bytes) {
+            return Ok(());
+        }
+    }
+
     let id = repo.id;
     let path = clone_path(&mirror_root, &repo);
     let db_repo = database::Repo::from(repo);
@@ -169,6 +191,19 @@ async fn process_repo(
     Ok(())
 }
 
+
+fn is_repo_oversize(
+    size_kilobytes: u64,
+    max_repo_size_bytes: u64,
+) -> bool {
+    let size_bytes = size_kilobytes * 1000;
+
+    if size_bytes > max_repo_size_bytes {
+        return true;
+    }
+
+    false
+}
 
 fn clone_path<P: AsRef<Path>>(base_path: P, repo: &github::Repo) -> PathBuf {
     let git_dir = format!("{}.git", repo.name);
