@@ -2,7 +2,7 @@ use anyhow::{self, Context};
 use chrono::DateTime;
 use exitcode;
 use filetime;
-use futures::{self, executor, future};
+// use futures::{self, executor, future};
 use getopts::Options;
 use parse_size::parse_size;
 use sqlx;
@@ -137,16 +137,22 @@ fn run() -> anyhow::Result<()> {
     }
 
     // executor::block_on(future::join_all(joins));
-    rt.block_on(async {
-        let mut joins = tokio_stream::iter(&joins);
+    let results = rt.block_on(async {
+        let mut joins = tokio_stream::iter(&mut joins);
+        let mut results = Vec::new();
 
         while let Some(task) = joins.next().await {
-            let a = task.await?;
-            dbg!(a);
+            let result = task.await;
+            results.push(result);
         }
 
-        Ok::<(), anyhow::Error>(())
-    })?;
+        results
+    });
+
+    let errors = results.iter()
+        .filter(|r| r.is_err());
+
+    dbg!(&errors);
 
     Ok(())
 }
