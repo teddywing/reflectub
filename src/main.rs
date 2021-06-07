@@ -123,6 +123,7 @@ fn run() -> anyhow::Result<()> {
 
         let join = tokio::spawn(async move {
             let mut db = db.lock().await;
+            dbg!("processing on", std::thread::current().id());
 
             process_repo(
                 &repo,
@@ -165,6 +166,7 @@ async fn process_repo(
     base_cgitrc: Option<PathBuf>,
     max_repo_size_bytes: Option<u64>,
 ) -> anyhow::Result<()> {
+    return anyhow::bail!("test");
     if let Some(max_repo_size_bytes) = max_repo_size_bytes {
         if is_repo_oversize(repo.size, max_repo_size_bytes) {
             return Ok(());
