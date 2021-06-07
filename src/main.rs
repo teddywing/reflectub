@@ -116,6 +116,7 @@ fn run() -> anyhow::Result<()> {
     // let mut joins = futures::stream::FuturesUnordered::new();
     let mut joins = Vec::with_capacity(repos.len());
 
+    let mut i = 0;
     for repo in repos {
         let db = db.clone();
         let mirror_root = mirror_root.clone();
@@ -135,6 +136,11 @@ fn run() -> anyhow::Result<()> {
         });
 
         joins.push(join);
+
+        if i == 5 {
+            break;
+        }
+        i += 1;
     }
 
     // executor::block_on(future::join_all(joins));
