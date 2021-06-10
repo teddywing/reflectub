@@ -38,7 +38,18 @@ use std::sync::Arc;
 
 
 fn main() {
-    match run() {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_io()
+        .enable_time()
+        .worker_threads(4)
+        .build()
+        .unwrap();
+    // let rt = tokio::runtime::Runtime::new()
+    let _rt_guard = rt.enter();
+
+    let result = rt.block_on(run());
+
+    match result {
         Ok(_) => (),
         Err(e) => {
             eprint!("error");
@@ -61,7 +72,7 @@ fn print_usage(opts: &Options) {
     );
 }
 
-fn run() -> anyhow::Result<()> {
+async fn run() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
@@ -112,24 +123,16 @@ fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_io()
-        .enable_time()
-        .build()?;
-    let _rt_guard = rt.enter();
-
-    let repos = rt.block_on(github::fetch_repos(username))?;
+    let repos = github::fetch_repos(username).await?;
 
     let db = Arc::new(
         tokio::sync::Mutex::new(
-            rt.block_on(database::Db::connect(&database_file))?,
+            database::Db::connect(&database_file).await?,
         )
     );
 
-    rt.block_on(async {
-        db.lock().await
-            .create().await
-    })?;
+    db.lock().await
+        .create().await?;
 
     // let mut joins = futures::stream::FuturesUnordered::new();
     let mut joins = Vec::with_capacity(repos.len());
@@ -140,7 +143,8 @@ fn run() -> anyhow::Result<()> {
         let mirror_root = mirror_root.clone();
         let base_cgitrc = base_cgitrc.clone();
 
-        let join = tokio::spawn(async move {
+        // let join = tokio::runtime::Handle::current().spawn(async move {
+        let join = tokio::task::spawn(async move {
             let mut db = db.lock().await;
             dbg!("processing on", std::thread::current().id());
 
@@ -162,17 +166,18 @@ fn run() -> anyhow::Result<()> {
     }
 
     // executor::block_on(future::join_all(joins));
-    let results = rt.block_on(async {
-        let mut joins = tokio_stream::iter(&mut joins);
-        let mut results = Vec::new();
+    let mut joins = tokio_stream::iter(&mut joins);
+    let mut results = Vec::new();
 
-        while let Some(task) = joins.next().await {
-            let result = task.await;
-            results.push(result);
-        }
+    while let Some(task) = joins.next().await {
+        let result = task.await;
+        results.push(result);
+    }
 
-        results
-    });
+    // for task in joins {
+    //     // results.push(task.await);
+    //     results.push(tokio::join!(task));
+    // }
 
     let errors = results.iter()
         .filter(|r| r.is_err());
