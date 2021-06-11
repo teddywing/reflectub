@@ -16,7 +16,7 @@
 // along with Reflectub. If not, see <https://www.gnu.org/licenses/>.
 
 
-use sqlx::{self, ConnectOptions, Connection, Executor, Row};
+use rusqlite::{self, OptionalExtension};
 use thiserror;
 
 use crate::github;
@@ -54,59 +54,66 @@ impl From<&github::Repo> for Repo {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("database error")]
-    Db(#[from] sqlx::Error),
+    Db(#[from] rusqlite::Error),
 }
 
 
 #[derive(Debug)]
 pub struct Db {
-    connection: sqlx::SqliteConnection,
+    connection: rusqlite::Connection,
 }
 
 impl Db {
     /// Open a connection to the database.
-    pub async fn connect(path: &str) -> Result<Self, Error> {
+    pub fn connect(path: &str) -> Result<Self, Error> {
         Ok(
             Db {
-                connection: sqlx::sqlite::SqliteConnectOptions::new()
-                    .filename(path)
-                    .create_if_missing(true)
-                    .connect()
-                    .await?,
+                connection: rusqlite::Connection::open_with_flags(
+                    path,
+                    rusqlite::OpenFlags::SQLITE_OPEN_CREATE,
+                )?,
             }
         )
     }
 
     /// Initialise the database with tables and indexes.
-    pub async fn create(&mut self) -> Result<(), Error> {
-        let mut tx = self.connection.begin().await?;
+    pub fn create(&mut self) -> Result<(), Error> {
+        let tx = self.connection.transaction()?;
 
-        tx.execute(r#"
-            CREATE TABLE IF NOT EXISTS repositories (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT,
-                updated_at TEXT NOT NULL
-            );
-        "#).await?;
+        tx.execute(
+            r#"
+                CREATE TABLE IF NOT EXISTS repositories (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    updated_at TEXT NOT NULL
+                );
+            "#,
+            [],
+        )?;
 
-        tx.execute(r#"
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_repositories_id
-                ON repositories (id);
-        "#).await?;
+        tx.execute(
+            r#"
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_repositories_id
+                    ON repositories (id);
+            "#,
+            [],
+        )?;
 
-        tx.commit().await?;
+        tx.commit()?;
 
         Ok(())
     }
 
     /// Get a repository by its ID.
     ///
-    /// Returns a `sqlx::Error::RowNotFound` error if the row doesn't exist.
-    pub async fn repo_get(&mut self, id: i64) -> Result<Repo, Error> {
-        let mut tx = self.connection.begin().await?;
+    /// Returns a `rusqlite::Error::QueryReturnedNoRows` error if the row
+    /// doesn't exist.
+    pub fn repo_get(&mut self, id: i64) -> Result<Repo, Error> {
+        let tx = self.connection.transaction()?;
 
-        let row = sqlx::query(r#"
+        let repo = tx.query_row(
+            r#"
             SELECT
                 id,
                 name,
@@ -114,41 +121,45 @@ impl Db {
                 updated_at
             FROM repositories
             WHERE id = ?
-        "#)
-            .bind(id)
-            .fetch_one(&mut tx)
-            .await?;
+            "#,
+            [id],
+            |row| {
+                Ok(
+                    Repo {
+                        id: row.get(0)?,
+                        name: Some(row.get(1)?),
+                        description: row.get(2)?,
+                        updated_at: Some(row.get(3)?),
+                    }
+                )
+            },
+        )?;
 
-        tx.commit().await?;
+        tx.commit()?;
 
-        Ok(
-            Repo {
-                id: row.get(0),
-                name: Some(row.get(1)),
-                description: row.get(2),
-                updated_at: Some(row.get(3)),
-            }
-        )
+        Ok(repo)
     }
 
     /// Insert a new repository.
-    pub async fn repo_insert(&mut self, repo: Repo) -> Result<(), Error> {
-        let mut tx = self.connection.begin().await?;
+    pub fn repo_insert(&mut self, repo: Repo) -> Result<(), Error> {
+        let tx = self.connection.transaction()?;
 
-        sqlx::query(r#"
+        tx.execute(
+            r#"
             INSERT INTO repositories
                 (id, name, description, updated_at)
                 VALUES
                 (?, ?, ?, ?)
-        "#)
-            .bind(repo.id)
-            .bind(&repo.name)
-            .bind(&repo.description)
-            .bind(&repo.updated_at)
-            .execute(&mut tx)
-            .await?;
+            "#,
+            rusqlite::params![
+                repo.id,
+                &repo.name,
+                &repo.description,
+                &repo.updated_at,
+            ],
+        )?;
 
-        tx.commit().await?;
+        tx.commit()?;
 
         Ok(())
     }
@@ -157,53 +168,59 @@ impl Db {
     ///
     /// Compares the `updated_at` field to find out whether the repository was
     /// updated.
-    pub async fn repo_is_updated(
+    pub fn repo_is_updated(
         &mut self,
         repo: &Repo,
     ) -> Result<bool, Error> {
-        let mut tx = self.connection.begin().await?;
+        let tx = self.connection.transaction()?;
 
-        let is_updated = match sqlx::query(r#"
+        let is_updated = match tx.query_row(
+            r#"
             SELECT 1
             FROM repositories
             WHERE id = ?
                 AND datetime(updated_at) < datetime(?)
-        "#)
-            .bind(repo.id)
-            .bind(&repo.updated_at)
-            .fetch_optional(&mut tx)
-            .await
+            "#,
+            rusqlite::params![
+                repo.id,
+                &repo.updated_at,
+            ],
+            |row| row.get::<usize, u8>(0),
+        )
+            .optional()
         {
             Ok(Some(_)) => Ok(true),
             Ok(None) => Ok(false),
             Err(e) => Err(e.into()),
         };
 
-        tx.commit().await?;
+        tx.commit()?;
 
         is_updated
     }
 
     /// Update an existing repository.
-    pub async fn repo_update(&mut self, repo: &Repo) -> Result<(), Error> {
-        let mut tx = self.connection.begin().await?;
+    pub fn repo_update(&mut self, repo: &Repo) -> Result<(), Error> {
+        let tx = self.connection.transaction()?;
 
-        sqlx::query(r#"
+        tx.execute(
+            r#"
             UPDATE repositories
             SET
                 name = ?,
                 description = ?,
                 updated_at = ?
             WHERE id = ?
-        "#)
-            .bind(&repo.name)
-            .bind(&repo.description)
-            .bind(&repo.updated_at)
-            .bind(repo.id)
-            .execute(&mut tx)
-            .await?;
+            "#,
+            rusqlite::params![
+                &repo.name,
+                &repo.description,
+                &repo.updated_at,
+                repo.id,
+            ],
+        )?;
 
-        tx.commit().await?;
+        tx.commit()?;
 
         Ok(())
     }

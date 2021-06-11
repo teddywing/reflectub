@@ -23,7 +23,7 @@ use filetime;
 // use futures::{self, executor, future};
 use getopts::Options;
 use parse_size::parse_size;
-use sqlx;
+use rusqlite;
 use tokio;
 use tokio_stream::StreamExt;
 
@@ -127,12 +127,12 @@ async fn run() -> anyhow::Result<()> {
 
     let db = Arc::new(
         tokio::sync::Mutex::new(
-            database::Db::connect(&database_file).await?,
+            database::Db::connect(&database_file)?,
         )
     );
 
     db.lock().await
-        .create().await?;
+        .create()?;
 
     // let mut joins = futures::stream::FuturesUnordered::new();
     let mut joins = Vec::with_capacity(repos.len());
@@ -206,27 +206,27 @@ async fn process_repo(
     let path = clone_path(&mirror_root, &repo);
     let db_repo = database::Repo::from(repo);
 
-    match db.repo_get(id).await {
+    match db.repo_get(id) {
         // If we've already seen the repo and it's been updated, fetch the
         // latest.
         Ok(current_repo) => {
-            if db.repo_is_updated(&db_repo).await? {
+            if db.repo_is_updated(&db_repo)? {
                 update(&path, &current_repo, &repo)?;
 
-                db.repo_update(&db_repo).await?;
+                db.repo_update(&db_repo)?;
             }
         },
 
         // If the repo doesn't exist, mirror it and store it in the
         // database.
-        Err(database::Error::Db(sqlx::Error::RowNotFound)) => {
+        Err(database::Error::Db(rusqlite::Error::QueryReturnedNoRows)) => {
             mirror(
                 &path,
                 &repo,
                 base_cgitrc.as_ref(),
             )?;
 
-            db.repo_insert(db_repo).await?;
+            db.repo_insert(db_repo)?;
         },
 
         Err(e) => anyhow::bail!(e),

@@ -13,11 +13,8 @@ getopts = "0.2.21"
 git2 = "0.13.20"
 parse-size = { version = "1.0.0", features = ["std"] }
 reqwest = { version = "0.11.3", features = ["json"] }
+rusqlite = "0.25.3"
 serde = { version = "1.0.126", features = ["derive"] }
 thiserror = "1.0.25"
 tokio = { version = "1.6.1", features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1.6"
-
-[dependencies.sqlx]
-version = "0.5.5"
-features = ["chrono", "runtime-tokio-rustls", "sqlite"]
