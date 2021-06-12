@@ -16,7 +16,6 @@
 // along with Reflectub. If not, see <https://www.gnu.org/licenses/>.
 
 
-use reqwest::ClientBuilder;
 use serde::Deserialize;
 use thiserror;
 
@@ -30,11 +29,11 @@ const USER_AGENT: &'static str = concat!(
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("request error")]
-    Http(#[from] reqwest::Error),
+    #[error("GitHub request error")]
+    Http(#[from] ureq::Error),
 
-    #[error("request header error")]
-    Header(#[from] reqwest::header::InvalidHeaderValue),
+    #[error("GitHub I/O error")]
+    Io(#[from] std::io::Error),
 }
 
 
@@ -61,30 +60,24 @@ impl Repo {
 
 
 /// Fetch all GitHub repositories for the given user.
-pub async fn fetch_repos(github_username: &str) -> Result<Vec<Repo>, Error> {
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert("Accept", "application/vnd.github.v3+json".parse()?);
-
-    let client = ClientBuilder::new()
+pub fn fetch_repos(github_username: &str) -> Result<Vec<Repo>, Error> {
+    let agent = ureq::AgentBuilder::new()
         .user_agent(USER_AGENT)
-        .default_headers(headers)
-        .build()?;
+        .build();
 
     let mut repos = Vec::new();
 
     for i in 1.. {
-        let repo_page = client.request(
-            reqwest::Method::GET,
-            format!(
+        let repo_page: Vec<Repo> = agent.get(
+            &format!(
                 "https://api.github.com/users/{}/repos?page={}&per_page=100&sort=updated",
                 github_username,
                 i,
             ),
         )
-            .send()
-            .await?
-            .json::<Vec<Repo>>()
-            .await?;
+            .set("Accept", "application/vnd.github.v3+json")
+            .call()?
+            .into_json()?;
 
         if repo_page.is_empty() {
             break;

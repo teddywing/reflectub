@@ -24,8 +24,6 @@ use filetime;
 use getopts::Options;
 use parse_size::parse_size;
 use rusqlite;
-use tokio;
-use tokio_stream::StreamExt;
 
 use reflectub::{database, git, github};
 
@@ -38,18 +36,7 @@ use std::sync::{Arc, Mutex};
 
 
 fn main() {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_io()
-        .enable_time()
-        .worker_threads(4)
-        .build()
-        .unwrap();
-    // let rt = tokio::runtime::Runtime::new()
-    let _rt_guard = rt.enter();
-
-    let result = rt.block_on(run());
-
-    match result {
+    match run() {
         Ok(_) => (),
         Err(e) => {
             eprint!("error");
@@ -72,7 +59,7 @@ fn print_usage(opts: &Options) {
     );
 }
 
-async fn run() -> anyhow::Result<()> {
+fn run() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
@@ -123,7 +110,7 @@ async fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    let repos = github::fetch_repos(username).await?;
+    let repos = github::fetch_repos(username)?;
 
     let mut db = database::Db::connect(&database_file)
         .context("unable to connect to database")?;
