@@ -23,6 +23,8 @@ use filetime;
 // use futures::{self, executor, future};
 use getopts::Options;
 use parse_size::parse_size;
+use r2d2_sqlite::SqliteConnectionManager;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusqlite;
 
 use reflectub::{database, git, github};
@@ -112,8 +114,12 @@ fn run() -> anyhow::Result<()> {
 
     let repos = github::fetch_repos(username)?;
 
-    let mut db = database::Db::connect(&database_file)
-        .context("unable to connect to database")?;
+    let db = //Arc::new(
+        // Mutex::new(
+            database::Db::connect(&database_file)
+                .context("unable to connect to database")?;
+        // )
+    // );
 
     db.create()
         .context("unable to create database")?;
@@ -121,31 +127,46 @@ fn run() -> anyhow::Result<()> {
     // let mut joins = futures::stream::FuturesUnordered::new();
     // let mut joins = Vec::with_capacity(repos.len());
 
-    let mut i = 0;
-    for repo in repos {
-        // let db = db.clone();
-        let mirror_root = mirror_root.clone();
-        let base_cgitrc = base_cgitrc.clone();
+    // let mut i = 0;
+    // for repo in repos {
+    //     // let db = db.clone();
+    //     let mirror_root = mirror_root.clone();
+    //     let base_cgitrc = base_cgitrc.clone();
+    //
+    //     // let join = tokio::runtime::Handle::current().spawn(async move {
+    //     // let mut db = db.lock()?;
+    //
+    //     process_repo(
+    //         &repo,
+    //         &mut db,
+    //         &mirror_root,
+    //         base_cgitrc,
+    //         max_repo_size_bytes,
+    //     )?;
+    //     // });
+    //
+    //     // joins.push(join);
+    //
+    //     if i == 2 {
+    //         break;
+    //     }
+    //     i += 1;
+    // }
 
-        // let join = tokio::runtime::Handle::current().spawn(async move {
-        // let mut db = db.lock()?;
+    let _results: anyhow::Result<()> = repos[..2].par_iter()
+        .map(|repo| {
+            dbg!("Thread", std::thread::current().id());
 
-        process_repo(
-            &repo,
-            &mut db,
-            &mirror_root,
-            base_cgitrc,
-            max_repo_size_bytes,
-        )?;
-        // });
-
-        // joins.push(join);
-
-        if i == 5 {
-            break;
-        }
-        i += 1;
-    }
+            process_repo(
+                &repo,
+                &db,
+                &mirror_root,
+                base_cgitrc.clone(), // TODO: Can we avoid cloning
+                max_repo_size_bytes,
+            )
+        })
+        .collect();
+    // TODO: Return errors
 
     // executor::block_on(future::join_all(joins));
     // let mut joins = tokio_stream::iter(&mut joins);
@@ -172,12 +193,11 @@ fn run() -> anyhow::Result<()> {
 /// Mirror or update `repo`.
 fn process_repo(
     repo: &github::Repo,
-    db: &mut database::Db,
+    db: &database::Db,
     mirror_root: &str,
     base_cgitrc: Option<PathBuf>,
     max_repo_size_bytes: Option<u64>,
 ) -> anyhow::Result<()> {
-    return anyhow::bail!("test");
     if let Some(max_repo_size_bytes) = max_repo_size_bytes {
         if is_repo_oversize(repo.size, max_repo_size_bytes) {
             return Ok(());

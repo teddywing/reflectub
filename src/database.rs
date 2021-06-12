@@ -16,6 +16,8 @@
 // along with Reflectub. If not, see <https://www.gnu.org/licenses/>.
 
 
+use r2d2;
+use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{self, OptionalExtension};
 use thiserror;
 
@@ -55,31 +57,37 @@ impl From<&github::Repo> for Repo {
 pub enum Error {
     #[error("database error")]
     Db(#[from] rusqlite::Error),
+
+    #[error("connection pool error")]
+    Pool(#[from] r2d2::Error),
 }
 
 
 #[derive(Debug)]
 pub struct Db {
-    connection: rusqlite::Connection,
+    pool: r2d2::Pool<SqliteConnectionManager>,
 }
 
 impl Db {
     /// Open a connection to the database.
     pub fn connect(path: &str) -> Result<Self, Error> {
+        let manager = SqliteConnectionManager::file(path)
+            .with_flags(
+                rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+                | rusqlite::OpenFlags::SQLITE_OPEN_CREATE,
+            );
+
         Ok(
             Db {
-                connection: rusqlite::Connection::open_with_flags(
-                    path,
-                    rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
-                    | rusqlite::OpenFlags::SQLITE_OPEN_CREATE,
-                )?,
+                pool: r2d2::Pool::new(manager)?,
             }
         )
     }
 
     /// Initialise the database with tables and indexes.
-    pub fn create(&mut self) -> Result<(), Error> {
-        let tx = self.connection.transaction()?;
+    pub fn create(&self) -> Result<(), Error> {
+        let mut pool = self.pool.get()?;
+        let tx = pool.transaction()?;
 
         tx.execute(
             r#"
@@ -110,8 +118,9 @@ impl Db {
     ///
     /// Returns a `rusqlite::Error::QueryReturnedNoRows` error if the row
     /// doesn't exist.
-    pub fn repo_get(&mut self, id: i64) -> Result<Repo, Error> {
-        let tx = self.connection.transaction()?;
+    pub fn repo_get(&self, id: i64) -> Result<Repo, Error> {
+        let mut pool = self.pool.get()?;
+        let tx = pool.transaction()?;
 
         let repo = tx.query_row(
             r#"
@@ -142,8 +151,9 @@ impl Db {
     }
 
     /// Insert a new repository.
-    pub fn repo_insert(&mut self, repo: Repo) -> Result<(), Error> {
-        let tx = self.connection.transaction()?;
+    pub fn repo_insert(&self, repo: Repo) -> Result<(), Error> {
+        let mut pool = self.pool.get()?;
+        let tx = pool.transaction()?;
 
         tx.execute(
             r#"
@@ -170,10 +180,11 @@ impl Db {
     /// Compares the `updated_at` field to find out whether the repository was
     /// updated.
     pub fn repo_is_updated(
-        &mut self,
+        &self,
         repo: &Repo,
     ) -> Result<bool, Error> {
-        let tx = self.connection.transaction()?;
+        let mut pool = self.pool.get()?;
+        let tx = pool.transaction()?;
 
         let is_updated = match tx.query_row(
             r#"
@@ -201,8 +212,9 @@ impl Db {
     }
 
     /// Update an existing repository.
-    pub fn repo_update(&mut self, repo: &Repo) -> Result<(), Error> {
-        let tx = self.connection.transaction()?;
+    pub fn repo_update(&self, repo: &Repo) -> Result<(), Error> {
+        let mut pool = self.pool.get()?;
+        let tx = pool.transaction()?;
 
         tx.execute(
             r#"

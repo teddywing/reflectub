@@ -11,6 +11,9 @@ filetime = "0.2.14"
 getopts = "0.2.21"
 git2 = "0.13.20"
 parse-size = { version = "1.0.0", features = ["std"] }
+r2d2 = "0.8.9"
+r2d2_sqlite = "0.18.0"
+rayon = "1.5.1"
 rusqlite = "0.25.3"
 serde = { version = "1.0.126", features = ["derive"] }
 thiserror = "1.0.25"
