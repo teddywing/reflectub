@@ -70,7 +70,8 @@ impl Db {
             Db {
                 connection: rusqlite::Connection::open_with_flags(
                     path,
-                    rusqlite::OpenFlags::SQLITE_OPEN_CREATE,
+                    rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+                    | rusqlite::OpenFlags::SQLITE_OPEN_CREATE,
                 )?,
             }
         )
