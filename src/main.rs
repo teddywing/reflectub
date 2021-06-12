@@ -22,7 +22,6 @@ use exitcode;
 use filetime;
 use getopts::Options;
 use parse_size::parse_size;
-use r2d2_sqlite::SqliteConnectionManager;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusqlite;
 
