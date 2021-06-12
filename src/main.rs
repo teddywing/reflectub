@@ -125,9 +125,11 @@ async fn run() -> anyhow::Result<()> {
 
     let repos = github::fetch_repos(username).await?;
 
-    let mut db = database::Db::connect(&database_file)?;
+    let mut db = database::Db::connect(&database_file)
+        .context("unable to connect to database")?;
 
-    db.create()?;
+    db.create()
+        .context("unable to create database")?;
 
     // let mut joins = futures::stream::FuturesUnordered::new();
     // let mut joins = Vec::with_capacity(repos.len());
