@@ -147,7 +147,7 @@ async fn run() -> anyhow::Result<()> {
             &mirror_root,
             base_cgitrc,
             max_repo_size_bytes,
-        );
+        )?;
         // });
 
         // joins.push(join);
