@@ -34,7 +34,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 
 fn main() {
@@ -125,39 +125,32 @@ async fn run() -> anyhow::Result<()> {
 
     let repos = github::fetch_repos(username).await?;
 
-    let db = Arc::new(
-        tokio::sync::Mutex::new(
-            database::Db::connect(&database_file)?,
-        )
-    );
+    let mut db = database::Db::connect(&database_file)?;
 
-    db.lock().await
-        .create()?;
+    db.create()?;
 
     // let mut joins = futures::stream::FuturesUnordered::new();
-    let mut joins = Vec::with_capacity(repos.len());
+    // let mut joins = Vec::with_capacity(repos.len());
 
     let mut i = 0;
     for repo in repos {
-        let db = db.clone();
+        // let db = db.clone();
         let mirror_root = mirror_root.clone();
         let base_cgitrc = base_cgitrc.clone();
 
         // let join = tokio::runtime::Handle::current().spawn(async move {
-        let join = tokio::task::spawn(async move {
-            let mut db = db.lock().await;
-            dbg!("processing on", std::thread::current().id());
+        // let mut db = db.lock()?;
 
-            process_repo(
-                &repo,
-                &mut db,
-                &mirror_root,
-                base_cgitrc,
-                max_repo_size_bytes,
-            ).await
-        });
+        process_repo(
+            &repo,
+            &mut db,
+            &mirror_root,
+            base_cgitrc,
+            max_repo_size_bytes,
+        );
+        // });
 
-        joins.push(join);
+        // joins.push(join);
 
         if i == 5 {
             break;
@@ -166,29 +159,29 @@ async fn run() -> anyhow::Result<()> {
     }
 
     // executor::block_on(future::join_all(joins));
-    let mut joins = tokio_stream::iter(&mut joins);
-    let mut results = Vec::new();
-
-    while let Some(task) = joins.next().await {
-        let result = task.await;
-        results.push(result);
-    }
+    // let mut joins = tokio_stream::iter(&mut joins);
+    // let mut results = Vec::new();
+    //
+    // while let Some(task) = joins.next().await {
+    //     let result = task.await;
+    //     results.push(result);
+    // }
 
     // for task in joins {
     //     // results.push(task.await);
     //     results.push(tokio::join!(task));
     // }
 
-    let errors = results.iter()
-        .filter(|r| r.is_err());
+    // let errors = results.iter()
+    //     .filter(|r| r.is_err());
 
-    dbg!(&errors);
+    // dbg!(&errors);
 
     Ok(())
 }
 
 /// Mirror or update `repo`.
-async fn process_repo(
+fn process_repo(
     repo: &github::Repo,
     db: &mut database::Db,
     mirror_root: &str,
