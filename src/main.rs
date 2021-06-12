@@ -20,7 +20,6 @@ use anyhow::{self, Context};
 use chrono::DateTime;
 use exitcode;
 use filetime;
-// use futures::{self, executor, future};
 use getopts::Options;
 use parse_size::parse_size;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -114,44 +113,11 @@ fn run() -> anyhow::Result<()> {
 
     let repos = github::fetch_repos(username)?;
 
-    let db = //Arc::new(
-        // Mutex::new(
-            database::Db::connect(&database_file)
-                .context("unable to connect to database")?;
-        // )
-    // );
+    let db = database::Db::connect(&database_file)
+        .context("unable to connect to database")?;
 
     db.create()
         .context("unable to create database")?;
-
-    // let mut joins = futures::stream::FuturesUnordered::new();
-    // let mut joins = Vec::with_capacity(repos.len());
-
-    // let mut i = 0;
-    // for repo in repos {
-    //     // let db = db.clone();
-    //     let mirror_root = mirror_root.clone();
-    //     let base_cgitrc = base_cgitrc.clone();
-    //
-    //     // let join = tokio::runtime::Handle::current().spawn(async move {
-    //     // let mut db = db.lock()?;
-    //
-    //     process_repo(
-    //         &repo,
-    //         &mut db,
-    //         &mirror_root,
-    //         base_cgitrc,
-    //         max_repo_size_bytes,
-    //     )?;
-    //     // });
-    //
-    //     // joins.push(join);
-    //
-    //     if i == 2 {
-    //         break;
-    //     }
-    //     i += 1;
-    // }
 
     let _results: anyhow::Result<()> = repos[..2].par_iter()
         .map(|repo| {
@@ -167,25 +133,6 @@ fn run() -> anyhow::Result<()> {
         })
         .collect();
     // TODO: Return errors
-
-    // executor::block_on(future::join_all(joins));
-    // let mut joins = tokio_stream::iter(&mut joins);
-    // let mut results = Vec::new();
-    //
-    // while let Some(task) = joins.next().await {
-    //     let result = task.await;
-    //     results.push(result);
-    // }
-
-    // for task in joins {
-    //     // results.push(task.await);
-    //     results.push(tokio::join!(task));
-    // }
-
-    // let errors = results.iter()
-    //     .filter(|r| r.is_err());
-
-    // dbg!(&errors);
 
     Ok(())
 }
