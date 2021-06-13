@@ -35,7 +35,6 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
-use std::sync::{Arc, Mutex};
 
 
 fn main() {
