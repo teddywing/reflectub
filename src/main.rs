@@ -110,7 +110,7 @@ fn run() -> Result<(), MultiError> {
         .map(|s| PathBuf::from(s));
 
     let repos = github::fetch_repos(username)
-        .map_err(anyhow::Error::new)?;
+        .context("unable to fetch GitHub repositories")?;
 
     let db = database::Db::connect(&database_file)
         .context("unable to connect to database")?;
