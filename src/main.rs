@@ -41,7 +41,17 @@ fn main() {
     match run() {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("error: {}", e);
+            // format!("{}", e)
+            //     .lines()
+            //     .for_each(|l| eprintln!("error: {}", e));
+            // eprintln!();
+
+            // let errors = *e;
+            // errors.for_each(|e| eprintln!("error: {}", e));
+
+            e
+                .into_iter()
+                .for_each(|e| eprintln!("error: {:#}", e));
 
             process::exit(exitcode::SOFTWARE);
         },

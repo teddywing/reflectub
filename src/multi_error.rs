@@ -17,6 +17,7 @@
 
 
 use std::fmt;
+// use std::ops::Deref;
 
 
 /// Wraps a list of errors.
@@ -50,3 +51,28 @@ impl From<Vec<anyhow::Error>> for MultiError {
         MultiError { errors: errors }
     }
 }
+
+// impl Iterator for MultiError {
+//     type Item = anyhow::Error;
+//
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.errors.next()
+//     }
+// }
+
+impl IntoIterator for MultiError {
+    type Item = anyhow::Error;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.errors.into_iter()
+    }
+}
+
+// impl Deref for MultiError {
+//     type Target = [anyhow::Error];
+//
+//     fn deref(&self) -> &Self::Target {
+//         &self.errors
+//     }
+// }
