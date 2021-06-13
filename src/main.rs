@@ -27,8 +27,10 @@ use rusqlite;
 
 use reflectub::{database, git, github};
 
+mod multi_error;
+use multi_error::MultiError;
+
 use std::env;
-use std::fmt;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -46,39 +48,6 @@ fn main() {
         },
     };
 }
-
-
-#[derive(Debug, thiserror::Error)]
-struct MultiError {
-    errors: Vec<anyhow::Error>,
-}
-
-impl fmt::Display for MultiError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.errors
-                .iter()
-                .map(|e| format!("{:#}", e))
-                .collect::<Vec<_>>()
-                .join("\n"),
-        )
-    }
-}
-
-impl From<anyhow::Error> for MultiError {
-    fn from(error: anyhow::Error) -> Self {
-        MultiError { errors: vec![error] }
-    }
-}
-
-impl From<Vec<anyhow::Error>> for MultiError {
-    fn from(errors: Vec<anyhow::Error>) -> Self {
-        MultiError { errors: errors }
-    }
-}
-
 
 fn print_usage(opts: &Options) {
     print!(
