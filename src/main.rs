@@ -166,6 +166,7 @@ fn run() -> Result<(), MultiError> {
 
         // `e` should always be an error.
         .map(|e| e.err().unwrap())
+        // TODO: Prefix error with repo name
         .collect();
 
     if errors.len() > 0 {
