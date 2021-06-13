@@ -8,4 +8,4 @@ x Add a way to exclude repositories (2021.06.06: the max size option provides wh
 v Option to not mirror repositories over a given size (2021.06.06)
 
 2021.06.07:
-- Remove unused dependencies and/or features
+v Remove unused dependencies and/or features (2021.06.13)
