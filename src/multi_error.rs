@@ -19,6 +19,7 @@
 use std::fmt;
 
 
+/// Wraps a list of errors.
 #[derive(Debug, thiserror::Error)]
 pub struct MultiError {
     errors: Vec<anyhow::Error>,
