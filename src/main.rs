@@ -118,7 +118,7 @@ fn run() -> Result<(), MultiError> {
     db.create()
         .context("unable to create database")?;
 
-    let errors: Vec<_> = repos[..2]
+    let errors: Vec<_> = repos
         .par_iter()
         .map(|repo| {
             dbg!("Thread", std::thread::current().id());
