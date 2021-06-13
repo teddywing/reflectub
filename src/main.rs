@@ -129,7 +129,7 @@ fn run() -> Result<(), MultiError> {
                     &repo,
                     &db,
                     &mirror_root,
-                    base_cgitrc.clone(), // TODO: Can we avoid cloning
+                    base_cgitrc.as_ref(),
                     max_repo_size_bytes,
                 ),
             )
@@ -153,14 +153,13 @@ fn run() -> Result<(), MultiError> {
 }
 
 /// Mirror or update `repo`.
-fn process_repo(
+fn process_repo<P: AsRef<Path>>(
     repo: &github::Repo,
     db: &database::Db,
     mirror_root: &str,
-    base_cgitrc: Option<PathBuf>,
+    base_cgitrc: Option<P>,
     max_repo_size_bytes: Option<u64>,
 ) -> anyhow::Result<()> {
-    anyhow::bail!("test");
     if let Some(max_repo_size_bytes) = max_repo_size_bytes {
         if is_repo_oversize(repo.size, max_repo_size_bytes) {
             return Ok(());
@@ -186,9 +185,9 @@ fn process_repo(
         // database.
         Err(database::Error::Db(rusqlite::Error::QueryReturnedNoRows)) => {
             mirror(
-                &path,
+                path,
                 &repo,
-                base_cgitrc.as_ref(),
+                base_cgitrc,
             )?;
 
             db.repo_insert(db_repo)?;
@@ -234,11 +233,15 @@ fn clone_path<P: AsRef<Path>>(base_path: P, repo: &github::Repo) -> PathBuf {
 }
 
 /// Mirror a repository.
-fn mirror<P: AsRef<Path>>(
-    clone_path: P,
+fn mirror<P1, P2>(
+    clone_path: P1,
     repo: &github::Repo,
-    base_cgitrc: Option<P>,
-) -> anyhow::Result<()> {
+    base_cgitrc: Option<P2>,
+) -> anyhow::Result<()>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
     git::mirror(
         &repo.git_url,
         &clone_path,
