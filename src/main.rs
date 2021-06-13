@@ -28,6 +28,7 @@ use rusqlite;
 use reflectub::{database, git, github};
 
 use std::env;
+use std::fmt;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -39,18 +40,46 @@ fn main() {
     match run() {
         Ok(_) => (),
         Err(e) => {
-            eprint!("error");
-
-            for cause in e.chain() {
-                eprint!(": {}", cause);
-            }
-
-            eprintln!();
+            eprintln!("error: {}", e);
 
             process::exit(exitcode::SOFTWARE);
         },
     };
 }
+
+
+#[derive(Debug, thiserror::Error)]
+struct MultiError {
+    errors: Vec<anyhow::Error>,
+    // errors: Vec<Box<dyn std::error::Error>>,
+}
+
+impl fmt::Display for MultiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.errors
+                .iter()
+                .map(|e| format!("{:#}", e))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+    }
+}
+
+impl From<anyhow::Error> for MultiError {
+    fn from(error: anyhow::Error) -> Self {
+        MultiError { errors: vec![error] }
+    }
+}
+
+impl From<Vec<anyhow::Error>> for MultiError {
+    fn from(errors: Vec<anyhow::Error>) -> Self {
+        MultiError { errors: errors }
+    }
+}
+
 
 fn print_usage(opts: &Options) {
     print!(
@@ -59,7 +88,7 @@ fn print_usage(opts: &Options) {
     );
 }
 
-fn run() -> anyhow::Result<()> {
+fn run() -> Result<(), MultiError> {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
@@ -70,7 +99,8 @@ fn run() -> anyhow::Result<()> {
     opts.optflag("h", "help", "print this help menu");
     opts.optflag("V", "version", "show the program version");
 
-    let opt_matches = opts.parse(&args[1..])?;
+    let opt_matches = opts.parse(&args[1..])
+        .map_err(anyhow::Error::new)?;
 
     if opt_matches.opt_present("h") {
         print_usage(&opts);
@@ -110,7 +140,8 @@ fn run() -> anyhow::Result<()> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    let repos = github::fetch_repos(username)?;
+    let repos = github::fetch_repos(username)
+        .map_err(anyhow::Error::new)?;
 
     let db = database::Db::connect(&database_file)
         .context("unable to connect to database")?;
@@ -118,7 +149,7 @@ fn run() -> anyhow::Result<()> {
     db.create()
         .context("unable to create database")?;
 
-    let _results: anyhow::Result<()> = repos[..2].par_iter()
+    let errors: Vec<_> = repos[..2].par_iter()
         .map(|repo| {
             dbg!("Thread", std::thread::current().id());
 
@@ -130,8 +161,15 @@ fn run() -> anyhow::Result<()> {
                 max_repo_size_bytes,
             )
         })
+        .filter(|r| r.is_err())
+
+        // `e` should always be an error.
+        .map(|e| e.err().unwrap())
         .collect();
-    // TODO: Return errors
+
+    if errors.len() > 0 {
+        return Err(MultiError::from(errors))
+    }
 
     Ok(())
 }
@@ -144,6 +182,7 @@ fn process_repo(
     base_cgitrc: Option<PathBuf>,
     max_repo_size_bytes: Option<u64>,
 ) -> anyhow::Result<()> {
+    anyhow::bail!("test");
     if let Some(max_repo_size_bytes) = max_repo_size_bytes {
         if is_repo_oversize(repo.size, max_repo_size_bytes) {
             return Ok(());
