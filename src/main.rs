@@ -51,7 +51,6 @@ fn main() {
 #[derive(Debug, thiserror::Error)]
 struct MultiError {
     errors: Vec<anyhow::Error>,
-    // errors: Vec<Box<dyn std::error::Error>>,
 }
 
 impl fmt::Display for MultiError {
