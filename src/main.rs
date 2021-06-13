@@ -154,19 +154,26 @@ fn run() -> Result<(), MultiError> {
         .map(|repo| {
             dbg!("Thread", std::thread::current().id());
 
-            process_repo(
-                &repo,
-                &db,
-                &mirror_root,
-                base_cgitrc.clone(), // TODO: Can we avoid cloning
-                max_repo_size_bytes,
+            (
+                repo.name.clone(),
+                process_repo(
+                    &repo,
+                    &db,
+                    &mirror_root,
+                    base_cgitrc.clone(), // TODO: Can we avoid cloning
+                    max_repo_size_bytes,
+                ),
             )
         })
-        .filter(|r| r.is_err())
+        .filter(|(_, r)| r.is_err())
 
-        // `e` should always be an error.
-        .map(|e| e.err().unwrap())
-        // TODO: Prefix error with repo name
+        // `error` should always be an error.
+        .map(|(name, error)| {
+            error
+                .err()
+                .unwrap()
+                .context(name)
+        })
         .collect();
 
     if errors.len() > 0 {
