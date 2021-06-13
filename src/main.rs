@@ -121,8 +121,6 @@ fn run() -> Result<(), MultiError> {
     let errors: Vec<_> = repos
         .par_iter()
         .map(|repo| {
-            dbg!("Thread", std::thread::current().id());
-
             (
                 repo.name.clone(),
                 process_repo(
