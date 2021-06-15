@@ -122,7 +122,7 @@ fn run() -> Result<(), MultiError> {
         .par_iter()
         .map(|repo| {
             (
-                repo.name.clone(),
+                &repo.name,
                 process_repo(
                     &repo,
                     &db,
@@ -139,7 +139,7 @@ fn run() -> Result<(), MultiError> {
             error
                 .err()
                 .unwrap()
-                .context(name)
+                .context(name.clone())
         })
         .collect();
 
