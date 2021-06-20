@@ -1,0 +1,36 @@
+reflectub(1)
+============
+
+NAME
+----
+reflectub - Mirror a user's GitHub repositories
+
+SYNOPSIS
+--------
+'reflectub' [options] -d DATABASE <github_username> <repository_path>
+
+DESCRIPTION
+-----------
+Mirror all of a user's GitHub repositories. This command can be run regularly to
+fetch updates and new repositories from GitHub. It's designed to support Git web
+hosting services like CGit.
+
+OPTIONS
+-------
+--cgitrc CGITRC_FILE::
+	Specify the path to a 'cgitrc' file that should be copied into each mirrored
+	repository.
+
+-d,--database DATABASE::
+	Path to the SQLite database used by the program. This is a required
+	argument.
+
+--skip-larger-than SIZE::
+	Don't mirror repositories that are larger than 'SIZE'. Specify units, as in
+	`1024K', `50M'.
+
+-h, --help::
+	Print usage help.
+
+-V, --version::
+	Print the program version.
