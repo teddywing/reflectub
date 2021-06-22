@@ -49,6 +49,11 @@ pub fn mirror<P: AsRef<Path>>(
         path,
         &git2::RepositoryInitOptions::new()
             .bare(true)
+
+            // On Linux, using the external template prevents the custom
+            // description from being added. It doesn't make a difference on
+            // Mac OS.
+            .external_template(false)
             .description(description),
     )?;
 
