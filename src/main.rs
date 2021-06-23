@@ -32,7 +32,7 @@ use multi_error::MultiError;
 
 use std::env;
 use std::fs;
-use std::io;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -316,14 +316,15 @@ fn update_mtime<P: AsRef<Path>>(
     repo_path: P,
     repo: &github::Repo,
 ) -> anyhow::Result<()> {
+    // TODO: Use `pushed_at` instead of `updated_at` to set the mtime.
+    let update_time = filetime::FileTime::from_system_time(
+        DateTime::parse_from_rfc3339(&repo.updated_at)?.into()
+    );
+
     let default_branch_ref = repo_path
         .as_ref()
         .join("refs/heads")
         .join(&repo.default_branch);
-
-    let update_time = filetime::FileTime::from_system_time(
-        DateTime::parse_from_rfc3339(&repo.updated_at)?.into()
-    );
 
     // filetime::set_file_times(
     //     &default_branch_ref,
@@ -372,28 +373,84 @@ fn update_mtime<P: AsRef<Path>>(
         update_time,
     ) {
         Ok(_) => Ok(()),
-        Err(e) => match e.kind() {
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
             // If the default ref file doesn't exist, update times on the
             // 'packed-refs' file.
-            io::ErrorKind::NotFound => {
-                let packed_refs_path = repo_path
-                    .as_ref()
-                    .join("packed-refs");
+            let packed_refs_path = repo_path
+                .as_ref()
+                .join("packed-refs");
 
-                Ok(
-                    filetime::set_file_times(
-                        &packed_refs_path,
-                        update_time,
-                        update_time,
+            match filetime::set_file_times(
+                &packed_refs_path,
+                update_time,
+                update_time,
+            ) {
+                Ok(_) => Ok(()),
+                Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                    // In the absence of a 'packed-refs' file, create a CGit
+                    // agefile and add the update time to it.
+                    let agefile_dir = repo_path.as_ref().join("info/web");
+
+                    fs::DirBuilder::new()
+                        .create(&agefile_dir)
+                        .with_context(|| format!(
+                            "unable to create directory '{}'",
+                            &agefile_dir.display(),
+                        ))?;
+
+                    let agefile_path = agefile_dir.join("last-modified");
+
+                    let mut agefile = fs::OpenOptions::new()
+                        .write(true)
+                        .truncate(true)
+                        .create(true)
+                        .open(&agefile_path)
+                        .with_context(|| format!(
+                            "unable to open '{}'",
+                            &agefile_path.display(),
+                        ))?;
+
+                    writeln!(agefile, "{}", &repo.updated_at)
+                        .with_context(|| format!(
+                            "unable to write to '{}'",
+                            &agefile_path.display(),
+                        ))?;
+
+                    let cgitrc_path = repo_path
+                        .as_ref()
+                        .join("cgitrc");
+
+                    let mut cgitrc_file = fs::OpenOptions::new()
+                        .append(true)
+                        .create(true)
+                        .open(&cgitrc_path)
+                        .with_context(|| format!(
+                            "unable to open '{}'",
+                            &cgitrc_path.display(),
+                        ))?;
+
+                    writeln!(
+                        cgitrc_file,
+                        "{}",
+                        "agefile=info/web/last-modified",
                     )
                         .with_context(|| format!(
-                            "unable to set mtime on '{}'",
-                            &packed_refs_path.display(),
-                        ))?
-                )
-            },
-            _ => Err(e),
+                            "unable to write to '{}'",
+                            &cgitrc_path.display(),
+                        ))?;
+
+                    Ok(())
+                },
+                Err(e) => Err(e),
+            }
+                .with_context(|| format!(
+                    "unable to set mtime on '{}'",
+                    &packed_refs_path.display(),
+                ))?;
+
+            Ok(())
         },
+        Err(e) => Err(e),
     }
         .with_context(|| format!(
             "unable to set mtime on '{}'",
