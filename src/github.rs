@@ -47,6 +47,7 @@ pub struct Repo {
     pub default_branch: String,
     pub size: u64,
     pub updated_at: String,
+    pub pushed_at: String,
 }
 
 impl Repo {

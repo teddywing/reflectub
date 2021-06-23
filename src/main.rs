@@ -122,7 +122,7 @@ fn run() -> Result<(), MultiError> {
             default_branch: "master".to_owned(),
             size: 48,
             updated_at: "2013-01-12T09:09:38Z".to_owned(),
-            // pushed_at: "2012-09-23T17:45:14Z".to_owned(),
+            pushed_at: "2012-09-23T17:45:14Z".to_owned(),
         },
         github::Repo {
             id: 158463778,
@@ -135,7 +135,7 @@ fn run() -> Result<(), MultiError> {
             default_branch: "master".to_owned(),
             size: 17,
             updated_at: "2018-11-20T23:44:31Z".to_owned(),
-            // pushed_at: "2018-11-20T23:44:29Z".to_owned(),
+            pushed_at: "2018-11-20T23:44:29Z".to_owned(),
         },
     ];
 
@@ -309,16 +309,20 @@ fn update<P: AsRef<Path>>(
     Ok(())
 }
 
-/// Set the mtime of the repository to GitHub's `updated_at` time.
+/// Set the mtime of the repository to GitHub's `pushed_at` time.
 ///
 /// Used for CGit "age" sorting.
 fn update_mtime<P: AsRef<Path>>(
     repo_path: P,
     repo: &github::Repo,
 ) -> anyhow::Result<()> {
-    // TODO: Use `pushed_at` instead of `updated_at` to set the mtime.
     let update_time = filetime::FileTime::from_system_time(
-        DateTime::parse_from_rfc3339(&repo.updated_at)?.into()
+        DateTime::parse_from_rfc3339(&repo.pushed_at)
+            .with_context(|| format!(
+                "unable to parse update time from '{}'",
+                &repo.pushed_at,
+            ))?
+            .into()
     );
 
     let default_branch_ref = repo_path
@@ -349,7 +353,7 @@ fn update_mtime<P: AsRef<Path>>(
                 Err(e) if e.kind() == io::ErrorKind::NotFound => {
                     // In the absence of a 'packed-refs' file, create a CGit
                     // agefile and add the update time to it.
-                    Ok(set_agefile_time(&repo_path, &repo.updated_at)?)
+                    Ok(set_agefile_time(&repo_path, &repo.pushed_at)?)
                 },
                 Err(e) => Err(e),
             }
