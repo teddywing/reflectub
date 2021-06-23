@@ -349,57 +349,7 @@ fn update_mtime<P: AsRef<Path>>(
                 Err(e) if e.kind() == io::ErrorKind::NotFound => {
                     // In the absence of a 'packed-refs' file, create a CGit
                     // agefile and add the update time to it.
-                    let agefile_dir = repo_path.as_ref().join("info/web");
-
-                    fs::DirBuilder::new()
-                        .create(&agefile_dir)
-                        .with_context(|| format!(
-                            "unable to create directory '{}'",
-                            &agefile_dir.display(),
-                        ))?;
-
-                    let agefile_path = agefile_dir.join("last-modified");
-
-                    let mut agefile = fs::OpenOptions::new()
-                        .write(true)
-                        .truncate(true)
-                        .create(true)
-                        .open(&agefile_path)
-                        .with_context(|| format!(
-                            "unable to open '{}'",
-                            &agefile_path.display(),
-                        ))?;
-
-                    writeln!(agefile, "{}", &repo.updated_at)
-                        .with_context(|| format!(
-                            "unable to write to '{}'",
-                            &agefile_path.display(),
-                        ))?;
-
-                    let cgitrc_path = repo_path
-                        .as_ref()
-                        .join("cgitrc");
-
-                    let mut cgitrc_file = fs::OpenOptions::new()
-                        .append(true)
-                        .create(true)
-                        .open(&cgitrc_path)
-                        .with_context(|| format!(
-                            "unable to open '{}'",
-                            &cgitrc_path.display(),
-                        ))?;
-
-                    writeln!(
-                        cgitrc_file,
-                        "{}",
-                        "agefile=info/web/last-modified",
-                    )
-                        .with_context(|| format!(
-                            "unable to write to '{}'",
-                            &cgitrc_path.display(),
-                        ))?;
-
-                    Ok(())
+                    Ok(set_agefile_time(&repo_path, &repo.updated_at)?)
                 },
                 Err(e) => Err(e),
             }
@@ -415,6 +365,61 @@ fn update_mtime<P: AsRef<Path>>(
         .with_context(|| format!(
             "unable to set mtime on '{}'",
             &default_branch_ref.display(),
+        ))?;
+
+    Ok(())
+}
+
+/// Write `update_time` into the repo's `info/web/last-modified` file.
+fn set_agefile_time<P: AsRef<Path>>(
+    repo_path: P,
+    update_time: &str,
+) -> anyhow::Result<()> {
+    let agefile_dir = repo_path.as_ref().join("info/web");
+    fs::DirBuilder::new()
+        .create(&agefile_dir)
+        .with_context(|| format!(
+            "unable to create directory '{}'",
+            &agefile_dir.display(),
+        ))?;
+
+    let agefile_path = agefile_dir.join("last-modified");
+    let mut agefile = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(&agefile_path)
+        .with_context(|| format!(
+            "unable to open '{}'",
+            &agefile_path.display(),
+        ))?;
+
+    writeln!(agefile, "{}", &update_time)
+        .with_context(|| format!(
+            "unable to write to '{}'",
+            &agefile_path.display(),
+        ))?;
+
+    let cgitrc_path = repo_path
+        .as_ref()
+        .join("cgitrc");
+    let mut cgitrc_file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&cgitrc_path)
+        .with_context(|| format!(
+            "unable to open '{}'",
+            &cgitrc_path.display(),
+        ))?;
+
+    writeln!(
+        cgitrc_file,
+        "{}",
+        "agefile=info/web/last-modified",
+    )
+        .with_context(|| format!(
+            "unable to write to '{}'",
+            &cgitrc_path.display(),
         ))?;
 
     Ok(())
