@@ -11,5 +11,8 @@ v Option to not mirror repositories over a given size (2021.06.06)
 v Remove unused dependencies and/or features (2021.06.13)
 
 2021.06.20:
-- Handle empty repositories
-- Figure out why description doesn't get set
+v Handle empty repositories (2021.06.23)
+v Figure out why description doesn't get set (2021.06.22)
+
+2021.06.23:
+- Look into handling a default branch other than master
