@@ -325,6 +325,46 @@ fn update_mtime<P: AsRef<Path>>(
         DateTime::parse_from_rfc3339(&repo.updated_at)?.into()
     );
 
+    // filetime::set_file_times(
+    //     &default_branch_ref,
+    //     update_time,
+    //     update_time,
+    // )
+    //     .or_else(|e| {
+    //         if (e.kind != io::ErrorKind::NotFound) {
+    //             return Err(e);
+    //         }
+    //
+    //         let packed_refs_path = repo_path
+    //             .as_ref()
+    //             .join("packed-refs");
+    //
+    //         filetime::set_file_times(
+    //             &packed_refs_path,
+    //             update_time,
+    //             update_time,
+    //         )
+    //     })
+    //     .or_else(|e| {
+    //         if (e.kind != io::ErrorKind::NotFound) {
+    //             return Err(e);
+    //         }
+    //
+    //         let packed_refs_path = repo_path
+    //             .as_ref()
+    //             .join("packed-refs");
+    //
+    //         filetime::set_file_times(
+    //             &packed_refs_path,
+    //             update_time,
+    //             update_time,
+    //         )
+    //     })
+    //     .with_context(|| format!(
+    //         "unable to set mtime on '{}'",
+    //         &default_branch_ref.display(),
+    //     ))?;
+
     // Try updating times on the default ref.
     match filetime::set_file_times(
         &default_branch_ref,
