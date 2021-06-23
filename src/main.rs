@@ -109,8 +109,35 @@ fn run() -> Result<(), MultiError> {
     let base_cgitrc = opt_matches.opt_str("cgitrc")
         .map(|s| PathBuf::from(s));
 
-    let repos = github::fetch_repos(username)
-        .context("unable to fetch GitHub repositories")?;
+    // let repos = github::fetch_repos(username)
+    //     .context("unable to fetch GitHub repositories")?;
+
+    let repos = vec![
+        github::Repo {
+            id: 5924490,
+            name: "THWAP".to_owned(),
+            description: None,
+            fork: false,
+            git_url: "git://github.com/teddywing/THWAP.git".to_owned(),
+            default_branch: "master".to_owned(),
+            size: 48,
+            updated_at: "2013-01-12T09:09:38Z".to_owned(),
+            // pushed_at: "2012-09-23T17:45:14Z".to_owned(),
+        },
+        github::Repo {
+            id: 158463778,
+            name: "youtube-turn-off-annotations".to_owned(),
+            description: Some(
+                "A user script that turns off annotations on YouTube videos".to_owned(),
+            ),
+            fork: false,
+            git_url: "git://github.com/teddywing/youtube-turn-off-annotations.git".to_owned(),
+            default_branch: "master".to_owned(),
+            size: 17,
+            updated_at: "2018-11-20T23:44:31Z".to_owned(),
+            // pushed_at: "2018-11-20T23:44:29Z".to_owned(),
+        },
+    ];
 
     let db = database::Db::connect(&database_file)
         .context("unable to connect to database")?;
