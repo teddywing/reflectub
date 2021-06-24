@@ -30,6 +30,7 @@ pub struct Repo {
     id: i64,
     name: Option<String>,
     description: Option<String>,
+    pub default_branch: Option<String>,
     updated_at: Option<String>,
 }
 
@@ -47,6 +48,7 @@ impl From<&github::Repo> for Repo {
             id: repo.id,
             name: Some(repo.name.clone()),
             description: repo.description.clone(),
+            default_branch: Some(repo.default_branch.clone()),
             updated_at: Some(repo.updated_at.clone()),
         }
     }
@@ -95,6 +97,7 @@ impl Db {
                     id INTEGER PRIMARY KEY,
                     name TEXT NOT NULL,
                     description TEXT,
+                    default_branch TEXT,
                     updated_at TEXT NOT NULL
                 );
             "#,
@@ -128,6 +131,7 @@ impl Db {
                 id,
                 name,
                 description,
+                default_branch,
                 updated_at
             FROM repositories
             WHERE id = ?
@@ -139,7 +143,8 @@ impl Db {
                         id: row.get(0)?,
                         name: Some(row.get(1)?),
                         description: row.get(2)?,
-                        updated_at: Some(row.get(3)?),
+                        default_branch: row.get(3)?,
+                        updated_at: Some(row.get(4)?),
                     }
                 )
             },
@@ -158,14 +163,15 @@ impl Db {
         tx.execute(
             r#"
             INSERT INTO repositories
-                (id, name, description, updated_at)
+                (id, name, description, default_branch, updated_at)
                 VALUES
-                (?, ?, ?, ?)
+                (?, ?, ?, ?, ?)
             "#,
             rusqlite::params![
                 repo.id,
                 &repo.name,
                 &repo.description,
+                &repo.default_branch,
                 &repo.updated_at,
             ],
         )?;
@@ -222,12 +228,14 @@ impl Db {
             SET
                 name = ?,
                 description = ?,
+                default_branch = ?,
                 updated_at = ?
             WHERE id = ?
             "#,
             rusqlite::params![
                 &repo.name,
                 &repo.description,
+                &repo.default_branch,
                 &repo.updated_at,
                 repo.id,
             ],

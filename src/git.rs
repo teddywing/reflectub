@@ -76,9 +76,7 @@ pub fn mirror<P: AsRef<Path>>(
     remote.fetch(&refspecs, None, None)?;
 
     if default_branch != "master" {
-        repo.set_head(
-            &format!("refs/heads/{}", default_branch),
-        )?;
+        repo_change_current_branch(&repo, default_branch)?;
     }
 
     Ok(())
@@ -132,4 +130,29 @@ pub fn update_description<P: AsRef<Path>>(
     }
 
     Ok(())
+}
+
+/// Change the current branch of the repository at `repo_path` to
+/// `default_branch`.
+pub fn change_current_branch<P: AsRef<Path>>(
+    repo_path: P,
+    default_branch: &str,
+) -> Result<(), Error> {
+    let repo = git2::Repository::open_bare(repo_path)?;
+
+    Ok(
+        repo_change_current_branch(&repo, default_branch)?
+    )
+}
+
+/// Change `repo`'s current branch to `default_branch`.
+fn repo_change_current_branch(
+    repo: &git2::Repository,
+    default_branch: &str,
+) -> Result<(), Error> {
+    Ok(
+        repo.set_head(
+            &format!("refs/heads/{}", default_branch),
+        )?
+    )
 }

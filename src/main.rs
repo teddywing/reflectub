@@ -278,6 +278,15 @@ fn update<P: AsRef<Path>>(
         git::update_description(&repo_path, remote_description)?;
     }
 
+    if let Some(default_branch) = &current_repo.default_branch {
+        if default_branch != &updated_repo.default_branch {
+            git::change_current_branch(
+                &repo_path,
+                &updated_repo.default_branch,
+            )?;
+        }
+    }
+
     update_mtime(&repo_path, &updated_repo)?;
 
     Ok(())
