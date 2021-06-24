@@ -44,6 +44,7 @@ pub fn mirror<P: AsRef<Path>>(
     url: &str,
     path: P,
     description: &str,
+    default_branch: &str,
 ) -> Result<(), Error> {
     let repo = git2::Repository::init_opts(
         path,
@@ -73,6 +74,12 @@ pub fn mirror<P: AsRef<Path>>(
 
     let refspecs: [&str; 0] = [];
     remote.fetch(&refspecs, None, None)?;
+
+    if default_branch != "master" {
+        repo.set_head(
+            &format!("refs/heads/{}", default_branch),
+        )?;
+    }
 
     Ok(())
 }

@@ -244,6 +244,7 @@ where
         &repo.git_url,
         &clone_path,
         repo.description(),
+        &repo.default_branch,
     )?;
 
     // Copy the base cgitrc file into the newly-cloned repository.
