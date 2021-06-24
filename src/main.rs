@@ -387,9 +387,23 @@ fn set_agefile_time<P: AsRef<Path>>(
             &agefile_path.display(),
         ))?;
 
+    repo_cgitrc_append(
+        &repo_path,
+        "agefile=info/web/last-modified",
+    )?;
+
+    Ok(())
+}
+
+/// Append `config` to the repo-local "cgitrc" file.
+fn repo_cgitrc_append<P: AsRef<Path>>(
+    repo_path: P,
+    config: &str,
+) -> anyhow::Result<()> {
     let cgitrc_path = repo_path
         .as_ref()
         .join("cgitrc");
+
     let mut cgitrc_file = fs::OpenOptions::new()
         .append(true)
         .create(true)
@@ -399,11 +413,7 @@ fn set_agefile_time<P: AsRef<Path>>(
             &cgitrc_path.display(),
         ))?;
 
-    writeln!(
-        cgitrc_file,
-        "{}",
-        "agefile=info/web/last-modified",
-    )
+    writeln!(cgitrc_file, "{}", config)
         .with_context(|| format!(
             "unable to write to '{}'",
             &cgitrc_path.display(),
