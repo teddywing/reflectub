@@ -259,6 +259,10 @@ where
             ))?;
     }
 
+    if repo.default_branch != "master" {
+        repo_cgitrc_set_defbranch(&clone_path, &repo.default_branch)?;
+    }
+
     update_mtime(&clone_path, &repo)?;
 
     Ok(())
@@ -284,6 +288,8 @@ fn update<P: AsRef<Path>>(
                 &repo_path,
                 &updated_repo.default_branch,
             )?;
+
+            repo_cgitrc_set_defbranch(&repo_path, &updated_repo.default_branch)?;
         }
     }
 
@@ -390,6 +396,19 @@ fn set_agefile_time<P: AsRef<Path>>(
     repo_cgitrc_append(
         &repo_path,
         "agefile=info/web/last-modified",
+    )?;
+
+    Ok(())
+}
+
+/// Set the default CGit branch in the repository's "cgitrc" file.
+fn repo_cgitrc_set_defbranch<P: AsRef<Path>>(
+    repo_path: P,
+    default_branch: &str,
+) -> anyhow::Result<()> {
+    repo_cgitrc_append(
+        &repo_path,
+        &format!("defbranch={}", default_branch),
     )?;
 
     Ok(())
