@@ -1,0 +1,22 @@
+CHANGELOG
+=========
+
+v0.0.2 (2021-06-25):
+	Fixes:
+
+	* Repository descriptions were not set to the corresponding GitHub
+	  description when mirroring repositories on Linux.
+	* Empty repositories with no branches or commits now have their mtime set
+	  correctly.
+
+	Changes:
+
+	* Set repository mtime to GitHub `pushed_at` time instead of `updated_at`
+	  time.
+	* Change HEAD to GitHub's default branch and set CGit's default branch to
+	  match.
+
+v0.0.1 (2021-06-20):
+	First public release.
+
+ vim:tw=80:comments=:fo+=n:formatlistpat=^\\s*\\*\\s*
