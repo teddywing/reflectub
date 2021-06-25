@@ -393,11 +393,6 @@ fn set_agefile_time<P: AsRef<Path>>(
             &agefile_path.display(),
         ))?;
 
-    repo_cgitrc_append(
-        &repo_path,
-        "agefile=info/web/last-modified",
-    )?;
-
     Ok(())
 }
 
