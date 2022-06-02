@@ -25,6 +25,19 @@ use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    MirrorCreateRepo(),
+    MirrorConfig(),
+    // What is remote_with_fetch?
+    //  A: Add a remote with the provided refspec to the repository's config
+    MirrorFetch(),
+
+    UpdateOpenRepo(),
+    UpdateGetRemotes(),
+    UpdateFindRemote(),
+    UpdateFetch(),
+
+    GitChangeBranch(),
+
     #[error("git error")]
     Git(#[from] git2::Error),
 
