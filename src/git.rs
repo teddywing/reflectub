@@ -27,8 +27,7 @@ use std::path::Path;
 pub enum Error {
     MirrorCreateRepo(),
     MirrorConfig(),
-    // What is remote_with_fetch?
-    //  A: Add a remote with the provided refspec to the repository's config
+    MirrorAddRemote(),
     MirrorFetch(),
 
     UpdateOpenRepo(),
