@@ -25,16 +25,32 @@ use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    MirrorCreateRepo(),
-    MirrorConfig(),
+    #[error("cannot create repo '{path}'")]
+    MirrorCreateRepo {
+        #[from]
+        source: git2::Error,
+        path: String,
+    },
+    #[error("")]
     MirrorAddRemote(),
+    #[error("")]
+    MirrorConfig(#[from] git2::Error),
+    #[error("")]
+    MirrorRemoteEnableMirror(),
+    #[error("")]
     MirrorFetch(),
 
+    #[error("")]
     UpdateOpenRepo(),
+    #[error("")]
     UpdateGetRemotes(),
+    #[error("")]
     UpdateFindRemote(),
+    #[error("")]
     UpdateFetch(),
 
+
+    #[error("")]
     GitChangeBranch(),
 
     #[error("git error")]
@@ -68,7 +84,8 @@ pub fn mirror<P: AsRef<Path>>(
             // Mac OS.
             .external_template(false)
             .description(description),
-    )?;
+    )
+        .map_err(|e| Error::MirrorCreateRepo{e, path})?;
 
     let remote_name = "origin";
 
