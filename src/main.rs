@@ -241,7 +241,7 @@ where
     P2: AsRef<Path>,
 {
     git::mirror(
-        &repo.git_url,
+        &repo.clone_url,
         &clone_path,
         repo.description(),
         &repo.default_branch,
