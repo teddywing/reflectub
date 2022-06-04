@@ -44,12 +44,32 @@ impl Repo {
 
 impl From<&github::Repo> for Repo {
     fn from(repo: &github::Repo) -> Self {
+        use chrono::DateTime;
+
+        let repo_updated_at = DateTime::parse_from_rfc3339(&repo.updated_at).ok();
+        let repo_pushed_at = DateTime::parse_from_rfc3339(&repo.pushed_at).ok();
+
+        // Set `updated_at` to the most recent of `repo_updated_at` or
+        // `repo_pushed_at`.
+        let updated_at =
+            if repo_updated_at.is_none() && repo_pushed_at.is_none() {
+                repo.updated_at.clone()
+
+            // `repo_updated_at` and `repo_pushed_at` are both Some.
+            } else if repo_pushed_at.unwrap() > repo_updated_at.unwrap() {
+                repo.pushed_at.clone()
+
+            // Default to `repo.updated_at`.
+            } else {
+                repo.updated_at.clone()
+            };
+
         Self {
             id: repo.id,
             name: Some(repo.name.clone()),
             description: repo.description.clone(),
             default_branch: Some(repo.default_branch.clone()),
-            updated_at: Some(repo.updated_at.clone()),
+            updated_at: Some(updated_at),
         }
     }
 }
