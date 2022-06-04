@@ -17,8 +17,8 @@ web frontend [CGit].
 
 
 ## License
-Copyright © 2021 Teddy Wing. Licensed under the GNU GPLv3+ (see the included
-COPYING file).
+Copyright © 2021, 2022 Teddy Wing. Licensed under the GNU GPLv3+ (see the
+included COPYING file).
 
 
 [CGit]: https://git.zx2c4.com/cgit/about/
