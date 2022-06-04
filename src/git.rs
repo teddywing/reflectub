@@ -1,4 +1,4 @@
-// Copyright (c) 2021  Teddy Wing
+// Copyright (c) 2021, 2022  Teddy Wing
 //
 // This file is part of Reflectub.
 //
@@ -25,6 +25,58 @@ use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("mirror: cannot create repo '{path}'")]
+    MirrorCreateRepo {
+        source: git2::Error,
+        path: String,
+    },
+    #[error("mirror: cannot add remote '{remote_name}:{url}'")]
+    MirrorAddRemote {
+        source: git2::Error,
+        remote_name: String,
+        url: String,
+    },
+    #[error("mirror: cannot get repo config")]
+    MirrorConfigGet(#[source] git2::Error),
+    #[error("mirror: cannot set 'mirror' flag on remote '{remote_name}'")]
+    MirrorRemoteEnableMirror {
+        source: git2::Error,
+        remote_name: String,
+    },
+    #[error("mirror: cannot fetch from remote '{remote_name}'")]
+    MirrorFetch {
+        source: git2::Error,
+        remote_name: String,
+    },
+
+    #[error("update: cannot open repo '{path}'")]
+    UpdateOpenRepo {
+        source: git2::Error,
+        path: String,
+    },
+    #[error("update: cannot get remotes for '{path}'")]
+    UpdateGetRemotes {
+        source: git2::Error,
+        path: String,
+    },
+    #[error("update: cannot find remote '{remote_name}'")]
+    UpdateFindRemote {
+        source: git2::Error,
+        remote_name: String,
+    },
+    #[error("update: cannot fetch from remote '{remote_name}")]
+    UpdateFetch {
+        source: git2::Error,
+        remote_name: String,
+    },
+
+    #[error("{action}: cannot switch to branch '{branch}'")]
+    GitChangeBranch {
+        source: git2::Error,
+        action: String,
+        branch: String,
+    },
+
     #[error("git error")]
     Git(#[from] git2::Error),
 
@@ -40,7 +92,7 @@ pub enum Error {
 /// ```shell
 /// git clone --mirror URL
 /// ```
-pub fn mirror<P: AsRef<Path>>(
+pub fn mirror<P: AsRef<Path> + Copy>(
     url: &str,
     path: P,
     description: &str,
@@ -56,7 +108,11 @@ pub fn mirror<P: AsRef<Path>>(
             // Mac OS.
             .external_template(false)
             .description(description),
-    )?;
+    )
+        .map_err(|e| Error::MirrorCreateRepo {
+            source: e,
+            path: format!("{}", path.as_ref().display()),
+        })?;
 
     let remote_name = "origin";
 
@@ -64,19 +120,38 @@ pub fn mirror<P: AsRef<Path>>(
         remote_name,
         url,
         "+refs/*:refs/*",
-    )?;
+    )
+        .map_err(|e| Error::MirrorAddRemote {
+            source: e,
+            remote_name: remote_name.to_owned(),
+            url: url.to_owned(),
+        })?;
 
-    let mut config = repo.config()?;
+    let mut config = repo.config()
+        .map_err(|e| Error::MirrorConfigGet(e))?;
     config.set_bool(
         &format!("remote.{}.mirror", remote_name),
         true,
-    )?;
+    )
+        .map_err(|e| Error::MirrorRemoteEnableMirror {
+            source: e,
+            remote_name: remote_name.to_owned(),
+        })?;
 
     let refspecs: [&str; 0] = [];
-    remote.fetch(&refspecs, None, None)?;
+    remote.fetch(&refspecs, None, None)
+        .map_err(|e| Error::MirrorFetch {
+            source: e,
+            remote_name: remote_name.to_owned(),
+        })?;
 
     if default_branch != "master" {
-        repo_change_current_branch(&repo, default_branch)?;
+        repo_change_current_branch(&repo, default_branch)
+            .map_err(|e| Error::GitChangeBranch {
+                source: e,
+                action: "mirror".to_owned(),
+                branch: default_branch.to_owned(),
+            })?;
     }
 
     Ok(())
@@ -89,14 +164,27 @@ pub fn mirror<P: AsRef<Path>>(
 /// ```shell
 /// git remote update
 /// ```
-pub fn update<P: AsRef<Path>>(
+pub fn update<P: AsRef<Path> + Copy>(
     path: P,
 ) -> Result<(), Error> {
-    let repo = git2::Repository::open_bare(path)?;
+    let repo = git2::Repository::open_bare(path)
+        .map_err(|e| Error::UpdateOpenRepo {
+            source: e,
+            path: format!("{}", path.as_ref().display()),
+        })?;
 
-    for remote_opt in &repo.remotes()? {
+    let remotes = &repo.remotes()
+        .map_err(|e| Error::UpdateGetRemotes {
+            source: e,
+            path: format!("{}", path.as_ref().display()),
+        })?;
+    for remote_opt in remotes {
         if let Some(remote_name) = remote_opt {
-            let mut remote = repo.find_remote(remote_name)?;
+            let mut remote = repo.find_remote(remote_name)
+                .map_err(|e| Error::UpdateFindRemote {
+                    source: e,
+                    remote_name: remote_name.to_owned(),
+                })?;
 
             let mut fetch_options = git2::FetchOptions::new();
             fetch_options
@@ -104,7 +192,11 @@ pub fn update<P: AsRef<Path>>(
                 .download_tags(git2::AutotagOption::All);
 
             let refspecs: [&str; 0] = [];
-            remote.fetch(&refspecs, Some(&mut fetch_options), None)?;
+            remote.fetch(&refspecs, Some(&mut fetch_options), None)
+                .map_err(|e| Error::UpdateFetch {
+                    source: e,
+                    remote_name: remote_name.to_owned(),
+                })?;
         }
     }
 
@@ -149,7 +241,7 @@ pub fn change_current_branch<P: AsRef<Path>>(
 fn repo_change_current_branch(
     repo: &git2::Repository,
     default_branch: &str,
-) -> Result<(), Error> {
+) -> Result<(), git2::Error> {
     Ok(
         repo.set_head(
             &format!("refs/heads/{}", default_branch),

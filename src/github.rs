@@ -1,4 +1,4 @@
-// Copyright (c) 2021  Teddy Wing
+// Copyright (c) 2021, 2022  Teddy Wing
 //
 // This file is part of Reflectub.
 //
@@ -43,7 +43,7 @@ pub struct Repo {
     pub name: String,
     pub description: Option<String>,
     pub fork: bool,
-    pub git_url: String,
+    pub clone_url: String,
     pub default_branch: String,
     pub size: u64,
     pub updated_at: String,

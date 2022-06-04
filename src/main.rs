@@ -1,4 +1,4 @@
-// Copyright (c) 2021  Teddy Wing
+// Copyright (c) 2021, 2022  Teddy Wing
 //
 // This file is part of Reflectub.
 //
@@ -241,7 +241,7 @@ where
     P2: AsRef<Path>,
 {
     git::mirror(
-        &repo.git_url,
+        &repo.clone_url,
         &clone_path,
         repo.description(),
         &repo.default_branch,
