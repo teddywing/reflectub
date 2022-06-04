@@ -1,6 +1,21 @@
 CHANGELOG
 =========
 
+v0.0.3 (2022-06-04):
+	Additions:
+
+	* Add more context to error messages.
+
+	Fixes:
+
+	* Mirroring and fetching from 'git://' URLs caused timeout errors. Switch
+	  to 'https://' URLs.
+	* Existing mirrored repositories with new commits were not updated.
+	  Previously, only the GitHub repository's `updated_at` field was used to
+	  determine if new changes were available. New pushes to a repository,
+	  however, don't change the `updated_at` field, but the `pushed_at` field.
+	  Now both date-times are used when checking for updates.
+
 v0.0.2 (2021-06-25):
 	Fixes:
 
